@@ -1,0 +1,272 @@
+schema_version: 3
+producer:
+  skill: chat-implementation-worker
+  mode: initial implementation
+  generated_at: 2026-08-29T19:44:00+09:00
+
+repository: ssaattww/Devo6.Interval
+issue_or_pr: "PR #2"
+task_id: null
+branch: docs/basic-interval-arithmetic-design
+base_ref: main
+target:
+  current_head: 7ea1494454837c307009955f1f685925147efd35
+  reviewed_head: null
+  commit_range: 9e5a4840d4f83d0f9b215bd3394f3d4bb60453b7..7ea1494454837c307009955f1f685925147efd35
+
+verification:
+  capability: remote_ci_only
+  capability_evidence:
+    - Repository reads and writes were performed through the required GitHub connector.
+    - No project, solution, executable test target, or CI workflow currently exists in the repository.
+  technical_head: 04d68c02c3b000610449b509f6d0a1ea88f9061c
+  administrative_parent: 04d68c02c3b000610449b509f6d0a1ea88f9061c
+  commit:
+    state: committed
+    review_target_sha: 04d68c02c3b000610449b509f6d0a1ea88f9061c
+  push:
+    state: pushed
+    head_sha: 7ea1494454837c307009955f1f685925147efd35
+  ci_wait:
+    state: unavailable
+    required_for: route_verification
+  final_publication:
+    sequence: final_push_then_authorized_pr_create_or_update_then_exact_head_pull_request_ci_wait
+    pr_action: create
+
+authoritative_requirements:
+  - source: user_instruction
+    reference: current chat
+    summary: Convert the interval-arithmetic discussion so far into a repository design document and treat the current material as basic design.
+  - source: user_instruction
+    reference: project instruction
+    summary: Use the GitHub connector for repository and PR operations, save a detailed report, post a concise PR comment, create or update a PR, and do not merge.
+  - source: other
+    reference: uploaded chatgpt-worker-skills.zip
+    summary: Apply work-context-manager, implementation-worker, report-writer, and chat-handoff-manager semantics; keep commit, push, CI, report, and handoff evidence explicit.
+
+development_policy:
+  method: documentation-only / validation-only
+  testing_order: not applicable because no executable implementation or test target is changed
+  governing_source: user request and repository state
+validation_plan:
+  commands: []
+  required_failure_diagnostics:
+    - not applicable because no executable test workflow exists for this documentation-only change
+blocked: []
+
+authorized_actions:
+  - read_repository
+  - edit_documentation
+  - write_handoff
+  - write_report
+  - create_branch
+  - commit
+  - push
+  - create_pr
+  - comment_pr
+write_boundary:
+  allowed:
+    - path_or_operation: doc/Design/basic/IntervalArithmetic.md
+      reason: requested basic design document
+    - path_or_operation: reports/2026-08-29-interval-arithmetic-basic-design.md
+      reason: required detailed implementation report
+    - path_or_operation: reports/2026-08-29-interval-arithmetic-basic-design-handoff.yaml
+      reason: required transportable handoff
+    - path_or_operation: PR #2 metadata/comment
+      reason: required PR publication and concise report
+  forbidden:
+    - path_or_operation: src/* and tests/*
+      reason: implementation was not requested
+    - path_or_operation: .github/workflows/*
+      reason: documentation-only task; repository has no executable/test target and the project-specific diagnostic workflow rule is not applicable here
+    - path_or_operation: tasks/*
+      reason: no task registration/update was requested and existing task tracking is empty
+    - path_or_operation: merge
+      reason: user performs merge
+
+scope:
+  - Persist the conversation's interval arithmetic decisions as a basic design.
+  - Define standards/reference implementation direction.
+  - Define the negated-lower internal representation and outward-rounding model.
+  - Record SIMD and AVX-512 direction at basic-design level.
+  - Record special-value semantics and dependency-problem boundary.
+  - Record backend decisions that remain open for detailed design.
+non_goals:
+  - Implement the C# library.
+  - Add project or solution files.
+  - Add CI workflows.
+  - Implement or test SIMD instruction sequences.
+  - Finalize transcendental functions or managed/native backend selection.
+
+files:
+  changed:
+    - path: doc/Design/basic/IntervalArithmetic.md
+      purpose: basic design for interval semantics, representation, rounding, SIMD, operations, dependency problem, and backend boundaries
+    - path: reports/2026-08-29-interval-arithmetic-basic-design.md
+      purpose: detailed implementation report
+  inspected:
+    - path: AGENTS.md
+      purpose: repository instructions; file is empty
+    - path: tasks/tasks-status.md
+      purpose: task status; file is empty
+    - path: doc/Design/basic/
+      purpose: confirm no prior basic design exists
+    - path: .github/workflows/
+      purpose: confirm no CI workflow exists
+    - path: reports/2026-08-29-repository-initialization.md
+      purpose: repository initialization scope and validation precedent
+    - path: reports/2026-08-29-repository-initialization-handoff.yaml
+      purpose: repository handoff/report persistence precedent
+    - path: unageek/inari src/interval.rs
+      purpose: confirm current neginf-sup-nan SIMD representation and Empty representation
+  intentionally_untouched:
+    - path_or_area: doc/Design/README.md
+      reason: requested scope is the basic design body; the file is currently empty
+    - path_or_area: src and tests
+      reason: no implementation requested
+    - path_or_area: CI workflow
+      reason: no executable or test target exists and this is documentation-only work
+    - path_or_area: task tracking
+      reason: no task entry exists and no task creation/update was requested
+
+commands: []
+tests:
+  - name: GitHub compare main to technical design HEAD
+    phase: verification
+    result: passed
+    head_sha: 04d68c02c3b000610449b509f6d0a1ea88f9061c
+    evidence: Compare reported one commit ahead and exactly one added file, doc/Design/basic/IntervalArithmetic.md, with 447 additions and no deletions.
+  - name: Fetch written design document from branch
+    phase: verification
+    result: passed
+    head_sha: 04d68c02c3b000610449b509f6d0a1ea88f9061c
+    evidence: GitHub connector returned the newly created basic design content from docs/basic-interval-arithmetic-design.
+
+ci:
+  required: false
+  workflow: null
+  run_id: null
+  head_sha: 04d68c02c3b000610449b509f6d0a1ea88f9061c
+  conclusion: not_applicable
+  artifacts: []
+
+implementation:
+  outcome: completed
+  final_head: 04d68c02c3b000610449b509f6d0a1ea88f9061c
+  commits:
+    - sha: 04d68c02c3b000610449b509f6d0a1ea88f9061c
+      purpose: add the interval arithmetic basic design
+    - sha: 7ea1494454837c307009955f1f685925147efd35
+      purpose: persist the detailed implementation report
+  addressed_findings: []
+  failure_diagnostics: []
+  blocked_items: []
+  summary:
+    - Basic design was created under doc/Design/basic.
+    - Current decisions and detailed-design follow-ups are explicitly separated.
+    - No implementation, workflow, or task-tracking changes were made.
+    - No merge was performed.
+
+review:
+  mode: not_applicable
+  reviewed_head: unknown
+  reviewer:
+    identity: unknown
+    role: not_applicable
+    continuity:
+      previous_reviewer_identity: null
+      changed: false
+      reason: null
+    independence:
+      implemented_change: unknown
+      implemented_review_fix: unknown
+      served_as_normal_reviewer: unknown
+      inherited_conversation: unknown
+      evidence: []
+  verdict: not_applicable
+  required_coverage: []
+  independent_closure:
+    initial_independent_reviewed_head: null
+    closure_reviewed_heads: []
+    reviewer_continuity: null
+    closure_scope: []
+    completeness_matrix: []
+  validation_assessment: []
+  reserved_report_paths: []
+  report_attestation:
+    allowed: not_applicable
+    reviewed_implementation_head: null
+    allowed_paths: []
+    required_first_parent: null
+    maximum_commits_after_reviewed_head: null
+    forbidden_path_classes: []
+    no_later_commits_required: not_applicable
+    validation_status: not_applicable
+    validation_evidence: []
+  summary: []
+
+report:
+  report_type: implementation_report
+  outcome: created
+  persistence_mode: repository_file
+  paths:
+    - reports/2026-08-29-interval-arithmetic-basic-design.md
+    - reports/2026-08-29-interval-arithmetic-basic-design-handoff.yaml
+  reviewed_head: null
+  attestation_head: null
+  pr_comments:
+    - target: PR #2
+      url_or_id: "5461872950"
+  summary:
+    - Detailed report was persisted and a concise summary was posted to PR #2.
+
+findings: []
+held: []
+unexplored: []
+unknown: []
+not_applicable:
+  - field_or_area: TDD / build / unit tests / E2E tests
+    reason: documentation-only change and no executable project or test target exists
+  - field_or_area: failure diagnostic artifacts
+    reason: no test workflow exists for this change
+remaining_risks:
+  - Detailed C# API design remains open.
+  - Exact fallback outward-rounding implementation for non-AVX-512 environments remains open.
+  - SIMD multiplication/division details remain open.
+  - Transcendental-function implementation remains open.
+  - Managed-only versus native-backend selection remains open.
+
+source_payloads:
+  - source_skill: work-context-manager
+    output_contract_version: unknown
+    content_type: text/markdown
+    payload: Repository context was resolved from the current user instruction, empty task/instruction files, existing repository initialization reports, current main HEAD, PR state, and absence of workflows/executable targets. Scope was limited to a new basic design plus required report/handoff/PR publication.
+  - source_skill: implementation-worker
+    output_contract_version: unknown
+    content_type: text/markdown
+    payload: Added doc/Design/basic/IntervalArithmetic.md as one technical commit, validated the branch content and exact diff with GitHub, and made no implementation or workflow changes.
+  - source_skill: report-writer
+    output_contract_version: unknown
+    content_type: text/markdown
+    payload: Persisted reports/2026-08-29-interval-arithmetic-basic-design.md and posted concise implementation evidence to PR #2.
+extensions: []
+
+next_action:
+  type: user_decision
+  target_skill: none
+  mode: null
+  summary: Review PR #2 and the basic-design decisions; merge only when satisfied.
+  instructions:
+    - Do not merge automatically.
+    - Use the detailed-design follow-up list in doc/Design/basic/IntervalArithmetic.md for subsequent design work.
+  required_attachments_or_references:
+    - doc/Design/basic/IntervalArithmetic.md
+    - reports/2026-08-29-interval-arithmetic-basic-design.md
+  requested_authorized_actions: []
+
+transport:
+  method: repository_file
+  packet_path: reports/2026-08-29-interval-arithmetic-basic-design-handoff.yaml
+  packet_url: null
+  transport_note: Handoff packet is persisted on the PR branch; its own persistence commit SHA is recorded externally in the final response because it cannot self-reference that future commit.
