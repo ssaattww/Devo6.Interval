@@ -1,0 +1,286 @@
+schema_version: 3
+producer:
+  skill: chat-implementation-worker
+  mode: initial implementation
+  generated_at: 2026-08-29T20:36:00+09:00
+
+repository: ssaattww/Devo6.Interval
+issue_or_pr: "PR #3"
+task_id: null
+branch: docs/detailed-interval-arithmetic-design
+base_ref: main
+target:
+  current_head: aa1a5e5a494ca3fc384250468a4df38014cd2f42
+  reviewed_head: null
+  commit_range: ad5c058f8a4164b0c7d0763c65246914ea5d1c03..aa1a5e5a494ca3fc384250468a4df38014cd2f42
+
+verification:
+  capability: remote_ci_only
+  capability_evidence:
+    - Repository reads and writes were performed through the required GitHub connector.
+    - The target repository has no executable project, test target, or CI workflow.
+    - The current task changes documentation only.
+  technical_head: aa1a5e5a494ca3fc384250468a4df38014cd2f42
+  administrative_parent: a83302dfdf9c7f037ce6c50e963a61764f4e5026
+  commit:
+    state: commit_pending
+    review_target_sha: aa1a5e5a494ca3fc384250468a4df38014cd2f42
+  push:
+    state: push_pending
+    head_sha: unknown
+  ci_wait:
+    state: ci_wait_pending
+    required_for: final exact-head evidence
+  full_local_equivalence_gate:
+    state: not_required
+    candidate_head: aa1a5e5a494ca3fc384250468a4df38014cd2f42
+    invalidated_runs: []
+  final_publication:
+    sequence: final_push_then_pr_update_then_exact_head_pull_request_ci_check
+    pr_action: create
+
+authoritative_requirements:
+  - source: user_instruction
+    reference: current chat
+    summary: Create the detailed design and evaluate a phased plan of scalar pilot, API finalization, SIMD implementation, then non-four-arithmetic features.
+  - source: repository_design
+    reference: doc/Design/basic/IntervalArithmetic.md
+    summary: Preserve IEEE 1788.1-oriented semantics, double endpoints, outward rounding, Empty/Entire, and the [-Lower, Upper] internal representation.
+  - source: uploaded_skill
+    reference: chatgpt-worker-skills.zip
+    summary: Resolve context, keep changes reviewable, persist a detailed report and handoff, comment on the PR, check exact-head CI evidence, and do not merge.
+
+development_policy:
+  method: validation-only
+  testing_order: not applicable for the documentation-only detailed design task
+  governing_source: current accepted documentation scope
+validation_plan:
+  commands: []
+  required_failure_diagnostics:
+    - not applicable to this documentation-only task because no test workflow or executable target exists
+blocked: []
+
+authorized_actions:
+  - read_repository
+  - edit_documentation
+  - write_handoff
+  - write_report
+  - create_branch
+  - commit
+  - push
+  - create_pr
+  - comment_pr
+write_boundary:
+  allowed:
+    - path_or_operation: doc/Design/detail/IntervalArithmetic.md
+      reason: explicitly requested detailed design
+    - path_or_operation: reports/2026-08-29-interval-arithmetic-detailed-design.md
+      reason: required detailed implementation report
+    - path_or_operation: reports/2026-08-29-interval-arithmetic-detailed-design-handoff.yaml
+      reason: required transportable handoff
+    - path_or_operation: PR #3 metadata and concise comment
+      reason: required publication and summary
+  forbidden:
+    - path_or_operation: merge
+      reason: repository owner performs merge
+    - path_or_operation: production implementation
+      reason: outside this detailed-design task
+    - path_or_operation: test implementation
+      reason: outside this detailed-design task
+    - path_or_operation: workflow implementation
+      reason: no executable or test target exists yet
+
+scope:
+  - Evaluate and define the scalar pilot, API freeze, SIMD, and post-four-arithmetic phases.
+  - Define a provisional public Interval API.
+  - Define the scalar managed outward-rounding implementation strategy.
+  - Define multiplication and division sign-classification behavior.
+  - Define TDD, independent reference-oracle, differential-test, and CI artifact requirements for Phase 1.
+  - Define SIMD boundaries, including AVX-512 batch behavior.
+non_goals:
+  - Implement the interval library.
+  - Add project or solution files.
+  - Add tests or benchmarks.
+  - Add CI workflows before executable targets exist.
+  - Implement SIMD or native wrappers.
+  - Implement elementary functions or decorated intervals.
+
+files:
+  changed:
+    - path: doc/Design/detail/IntervalArithmetic.md
+      purpose: implementation-level interval arithmetic detailed design
+    - path: reports/2026-08-29-interval-arithmetic-detailed-design.md
+      purpose: durable detailed design work report
+    - path: reports/2026-08-29-interval-arithmetic-detailed-design-handoff.yaml
+      purpose: lossless continuation packet
+  inspected:
+    - path: doc/Design/basic/IntervalArithmetic.md
+      purpose: authoritative basic design
+    - path: tasks/tasks-status.md
+      purpose: confirm no accepted repository task entry exists
+    - path: .github/workflows
+      purpose: confirm no executable CI workflow exists
+    - path: unageek/inari at 18b83a571d7681c76067bc38d90a74e8be29f545
+      purpose: reference interval representation and semantics
+    - path: mskashi/kv at c7f8f2324a0e403cca6b39f46088a22843d440db
+      purpose: reference managed-portable directed-rounding algorithms
+  intentionally_untouched:
+    - path_or_area: src/**
+      reason: documentation-only scope
+    - path_or_area: tests/**
+      reason: documentation-only scope
+    - path_or_area: .github/workflows/**
+      reason: no executable or test target exists yet
+    - path_or_area: tasks/**
+      reason: no task entry was supplied and the current user instruction is authoritative
+    - path_or_area: doc/Design/basic/IntervalArithmetic.md
+      reason: approved basic design remains unchanged; details are added separately
+
+commands: []
+tests:
+  - name: design consistency inspection
+    phase: documentation validation
+    result: passed
+    head_sha: aa1a5e5a494ca3fc384250468a4df38014cd2f42
+    evidence: Detailed design was checked against the merged basic design and the pinned inari/kv reference evidence.
+  - name: multiplication and division endpoint-table reasoning
+    phase: documentation validation
+    result: passed
+    head_sha: aa1a5e5a494ca3fc384250468a4df38014cd2f42
+    evidence: Each sign-class formula was checked against the four endpoint candidates and zero-boundary set semantics.
+
+ci:
+  required: false
+  workflow: null
+  run_id: null
+  head_sha: unknown
+  conclusion: not_applicable
+  artifacts: []
+
+implementation:
+  outcome: completed
+  final_head: aa1a5e5a494ca3fc384250468a4df38014cd2f42
+  commits:
+    - sha: aa1a5e5a494ca3fc384250468a4df38014cd2f42
+      purpose: add interval arithmetic detailed design
+    - sha: a83302dfdf9c7f037ce6c50e963a61764f4e5026
+      purpose: persist detailed design report
+  addressed_findings: []
+  failure_diagnostics: []
+  blocked_items: []
+  summary:
+    - The proposed phase order was accepted with a minimum value-semantics scope added to the scalar pilot.
+    - The pilot is pure managed and becomes the exact scalar reference backend.
+    - The core API is frozen before SIMD, while future batch APIs remain additive.
+    - AVX-512 packed embedded rounding is treated as a four-interval batch path.
+    - No merge was performed.
+
+review:
+  mode: not_applicable
+  reviewed_head: unknown
+  reviewer:
+    identity: unknown
+    role: not_applicable
+    continuity:
+      previous_reviewer_identity: null
+      changed: false
+      reason: null
+    independence:
+      implemented_change: unknown
+      implemented_review_fix: unknown
+      served_as_normal_reviewer: unknown
+      inherited_conversation: unknown
+      evidence: []
+  verdict: not_applicable
+  required_coverage: []
+  independent_closure:
+    initial_independent_reviewed_head: null
+    closure_reviewed_heads: []
+    reviewer_continuity: null
+    closure_scope: []
+    completeness_matrix: []
+  validation_assessment: []
+  reserved_report_paths: []
+  report_attestation:
+    allowed: not_applicable
+    reviewed_implementation_head: null
+    allowed_paths: []
+    required_first_parent: null
+    maximum_commits_after_reviewed_head: null
+    forbidden_path_classes: []
+    no_later_commits_required: not_applicable
+    validation_status: not_applicable
+    validation_evidence: []
+  summary: []
+
+report:
+  report_type: implementation_report
+  outcome: created
+  persistence_mode: repository_file
+  paths:
+    - reports/2026-08-29-interval-arithmetic-detailed-design.md
+    - reports/2026-08-29-interval-arithmetic-detailed-design-handoff.yaml
+  reviewed_head: null
+  attestation_head: null
+  pr_comments: []
+  summary:
+    - The detailed report is persisted separately from this handoff.
+    - A concise PR comment must be posted after the final handoff commit and exact-head CI check.
+
+findings: []
+held: []
+unexplored: []
+unknown:
+  - field_or_fact: final handoff persistence commit SHA
+    reason: the SHA does not exist until this packet is committed
+  - field_or_fact: final exact-head CI run
+    reason: it must be checked after the final handoff commit
+not_applicable:
+  - field_or_area: build and test execution
+    reason: this task changes documentation only and the repository has no executable project
+  - field_or_area: diagnostic artifact verification
+    reason: no test workflow exists yet; requirements are documented for Phase 1
+remaining_risks:
+  - Namespace, constructor/factory shape, scalar overloads, generic math, and stable formatting remain Phase 2 decisions.
+  - Batch API overlap rules and AVX2/ARM64 SIMD adoption remain Phase 3 decisions.
+  - Exact rational oracle and reference differential tooling must be implemented before the scalar pilot is accepted.
+
+source_payloads:
+  - source_skill: work-context-manager
+    output_contract_version: unknown
+    content_type: text/markdown
+    payload: Context was resolved from the current user instruction, merged basic design, repository state, workflow state, and pinned inari/kv evidence.
+  - source_skill: implementation-worker
+    output_contract_version: unknown
+    content_type: text/markdown
+    payload: A documentation-only detailed design was added on a new branch from the current main head, followed by a durable report.
+  - source_skill: report-writer
+    output_contract_version: unknown
+    content_type: text/markdown
+    payload: Detailed report persisted at reports/2026-08-29-interval-arithmetic-detailed-design.md; concise PR summary remains to be posted after final publication.
+extensions:
+  - namespace: devo6.interval.design
+    payload:
+      scalar_pilot: pure-managed, exact outward-rounded four arithmetic plus minimum value semantics
+      api_freeze: core Interval API only
+      simd: backend replacement and additive batch API
+      post_core: staged set, algebraic, transcendental, and decorated features
+
+next_action:
+  type: user_decision
+  target_skill: none
+  mode: null
+  summary: Review PR #3 and approve the detailed design before starting the scalar pilot implementation.
+  instructions:
+    - Do not merge automatically.
+    - Start Phase 1 only after the design decisions are accepted.
+  required_attachments_or_references:
+    - doc/Design/detail/IntervalArithmetic.md
+    - reports/2026-08-29-interval-arithmetic-detailed-design.md
+  requested_authorized_actions: []
+
+transport:
+  method: repository_file
+  packet_path: reports/2026-08-29-interval-arithmetic-detailed-design-handoff.yaml
+  packet_url: null
+  transport_note: The handoff packet is committed on the PR branch; its own SHA and the final exact-head CI result are recorded externally in the PR conversation and final response.
