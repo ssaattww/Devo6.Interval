@@ -1,0 +1,238 @@
+schema_version: 3
+producer:
+  skill: chat-review-worker
+  mode: fix_verification
+  generated_at: 2026-08-30T14:20:00+09:00
+
+repository: ssaattww/Devo6.Interval
+issue_or_pr: "PR #3"
+branch: docs/detailed-interval-arithmetic-design
+base_ref: main
+base_sha: ad5c058f8a4164b0c7d0763c65246914ea5d1c03
+
+target:
+  source_reviewed_head: da6e2ae04d35b01acfb307953a093c81c15342b8
+  source_review_report: reports/2026-08-29-pr-3-design-review-exhaustive.md
+  source_review_handoff: reports/2026-08-29-pr-3-design-review-exhaustive-handoff.yaml
+  fix_technical_head: 3b0c103dd5fb523b17b90ff9026d7384c0cf3ad4
+  fix_reviewed_head: c1826cc8dab3f070bfb5133ece44969a03727e97
+  verification_report_commit: 88cce449cfad7ef915c53a8ae1eb275fff827bf1
+  verification_handoff_commit: commit_pending
+  final_publication_head: commit_pending
+  commit_range: 4e9cfc7787ee885b98ea7253f93bc48e876d3086..c1826cc8dab3f070bfb5133ece44969a03727e97
+
+review:
+  mode: fix_verification
+  reviewer:
+    identity: ChatGPT GPT-5.6 Sol
+    role: normal_reviewer
+    continuity:
+      source_exhaustive_review_same_reviewer: true
+      reason: same normal-review chat performs closure verification per review workflow
+    independence:
+      implemented_design_fix: false
+      prior_writes_are_review_artifacts_only: true
+  verdict: fail
+  report: reports/2026-08-30-pr-3-design-fix-verification.md
+  source_active_findings: 7
+  resolved_count: 6
+  partial_count: 1
+  new_active_count: 1
+  withdrawn_count: 1
+
+source_findings:
+  - id: F-PR3-001
+    severity: high
+    source_status: active
+    verification_status: resolved
+    evidence:
+      - Sections 9 and 10 define complete scaled comparisons, residual ties, thresholds, early returns and overflow behavior.
+      - Fixed multiplication and division witness bit patterns were independently recomputed and match the specified branches.
+
+  - id: F-PR3-002
+    severity: medium
+    source_status: active
+    verification_status: resolved
+    evidence:
+      - Sections 3.2 and 19 separately gate AVX-512F, AVX2, AVX, Fma, SSE2, ARM64 AdvSimd and scalar fallbacks.
+      - Non-FMA x86 mul/div initially use scalar fallback.
+
+  - id: F-PR3-003
+    severity: low
+    source_status: withdrawn_erratum
+    verification_status: withdrawn_no_action
+    evidence:
+      - Remains withdrawn from the authoritative exhaustive review.
+
+  - id: F-PR3-004
+    severity: medium
+    source_status: active
+    verification_status: partial
+    title: IEEE 1788.1 conformance design still has invalid source/adaptation mapping
+    remaining_problems:
+      - >-
+        Section 14.4 says isSingleton is extracted from pinned
+        itl/libieeep1788_bool.itl, but the pinned ITF1788 repository contains no
+        isSingleton operation at all.
+      - >-
+        Numeric numsToInterval is required, but the selected
+        ieee1788-constructors.itl has only a minimal bare numeric constructor case;
+        the pinned libieeep1788_class.itl contains the relevant finite/invalid
+        b-numsToInterval corpus and is not listed as an extraction source.
+      - >-
+        Devo6.Interval defines Empty.Lower/Upper as NaN/NaN while pinned ITF1788 and
+        inari define inf(empty)=+Infinity and sup(empty)=-Infinity. The matrix maps
+        inf/sup directly to Lower/Upper as required and requires all conformance cases
+        to pass without declaring this deviation.
+    required_action:
+      - Correct the isSingleton provenance by defining repository-owned equivalent cases or another verified source.
+      - Correct numeric numsToInterval source selection, e.g. include libieeep1788_class.itl or define an equivalent standards matrix.
+      - Resolve Empty inf/sup either by changing pilot endpoint API semantics or declaring an explicit approved standards deviation with a deviation-aware conformance gate.
+      - Update the follow-up report/handoff closure claim for F-PR3-004.
+
+  - id: F-PR3-005
+    severity: medium
+    source_status: active
+    verification_status: resolved
+    evidence:
+      - Exact rational, IEEE matrix, inari and kv responsibilities are separated.
+      - Pinned adapters, JSONL corpus, reference-lock and integrity regeneration are defined.
+      - kv zero-containing interval division is explicitly not used as an oracle.
+
+  - id: F-PR3-006
+    severity: medium
+    source_status: active
+    verification_status: resolved
+    evidence:
+      - Linux x64 and Linux ARM64 run the same suite and corpus.
+      - Deterministic canonical result files are compared byte-for-byte with per-architecture diagnostics.
+
+  - id: F-PR3-007
+    severity: medium
+    source_status: active
+    verification_status: resolved
+    evidence:
+      - Sections 15.1-15.6 define threshold neighbors, scaled relation branches, division residual ties, exact cases and signed overflow cases.
+
+  - id: F-PR3-008
+    severity: low
+    source_status: active
+    verification_status: resolved
+    evidence:
+      - Section 20 explicitly defers native backend decisions to Phase 3 large-batch and Phase 4 transcendental gates while initial production remains managed-only.
+
+new_findings:
+  - id: F-PR3-009
+    severity: medium
+    status: active
+    origin: introduced_by_fix
+    locations:
+      - doc/Design/detail/IntervalArithmetic.md §13.2
+      - doc/Design/detail/IntervalArithmetic.md §15.5
+      - doc/Design/detail/IntervalArithmetic.md §18.2
+    title: Exact-rational primary oracle lacks finite-overflow expected-result conversion
+    problem: >-
+      Section 13.2 converts the BCL nearest result to an exact rational before comparing
+      it with the exact result. For finite operands whose exact result exceeds binary64
+      finite range, the BCL nearest result is Infinity and cannot be converted using the
+      finite-binary64 rational path. The previous design explicitly had an overflow
+      comparison against maximum finite value; design version 2 dropped it while adding
+      overflow fixtures and retaining exact-rational equality as an acceptance gate.
+    witness: "double.MaxValue * 2.0 -> nearest +Infinity; Up +Infinity, Down double.MaxValue"
+    required_action:
+      - Restore an independent exact-oracle finite-overflow conversion branch for all four arithmetic operations.
+      - Distinguish finite overflow from exact Infinity caused by Infinity operands/special interval semantics.
+      - Ensure overflow fixtures exercise the exact-oracle branch.
+
+coverage:
+  - criterion: prior_finding_closure
+    disposition: checked_finding
+    findings: [F-PR3-004]
+  - criterion: directed_rounding_correctness
+    disposition: checked_no_finding
+  - criterion: multiplication_division_boundary_witnesses
+    disposition: checked_no_finding
+  - criterion: simd_capability_design
+    disposition: checked_no_finding
+  - criterion: ieee_conformance_strategy
+    disposition: checked_finding
+    findings: [F-PR3-004]
+  - criterion: reference_oracle_roles_reproducibility
+    disposition: checked_no_finding
+  - criterion: exact_rational_oracle_completeness
+    disposition: checked_finding
+    findings: [F-PR3-009]
+  - criterion: x64_arm64_ci_design
+    disposition: checked_no_finding
+  - criterion: deterministic_fixture_adequacy
+    disposition: checked_no_finding
+  - criterion: native_backend_traceability
+    disposition: checked_no_finding
+  - criterion: public_api_value_semantics
+    disposition: checked_finding
+    findings: [F-PR3-004]
+  - criterion: failure_diagnostics
+    disposition: checked_no_finding
+  - criterion: scope_discipline
+    disposition: checked_no_finding
+  - criterion: security_secrets
+    disposition: not_applicable
+  - criterion: report_handoff_accuracy
+    disposition: checked_finding
+    findings: [F-PR3-004]
+  - criterion: exact_head_ci
+    disposition: checked_no_finding
+    evidence: >-
+      Fix-verification reviewed HEAD c1826cc8dab3f070bfb5133ece44969a03727e97
+      has zero pull_request workflow runs with matching head_sha. CI is unexecuted and
+      no other SHA was substituted.
+
+validation:
+  repository_build_or_tests:
+    applicable: false
+    reason: documentation-only PR; repository still has no executable project/test target
+  exact_head_ci:
+    reviewed_head: c1826cc8dab3f070bfb5133ece44969a03727e97
+    matching_runs: 0
+    status: CI未実施
+    substituted_other_sha: false
+  pinned_reference_checks:
+    itf1788_sha: d8c2a64478ebdc9cbde6ccef33eaad3bed60ed81
+    isSingleton_search_results: 0
+    bool_file_has_isSingleton: false
+    class_file_has_numsToInterval_cases: true
+    itf_inf_empty: +Infinity
+    itf_sup_empty: -Infinity
+    inari_inf_empty: +Infinity
+    inari_sup_empty: -Infinity
+    devo_empty_lower: NaN
+    devo_empty_upper: NaN
+
+reports:
+  source_fix_report: reports/2026-08-30-pr-3-design-review-follow-up.md
+  verification_report: reports/2026-08-30-pr-3-design-fix-verification.md
+  verification_handoff: reports/2026-08-30-pr-3-design-fix-verification-handoff.yaml
+
+repository_side_effects:
+  - operation: branch_created_accidentally
+    branch: noop-invalid
+    points_to: c1826cc8dab3f070bfb5133ece44969a03727e97
+    impact: none on PR branch or commits
+    cleanup_status: unable_to_delete_with_available_GitHub_connector_actions
+
+blocked: []
+held: []
+unexplored: []
+
+next_action:
+  type: design_rework
+  target: PR #3
+  summary: Address F-PR3-004 and F-PR3-009 only, correct follow-up closure documentation, then run same-reviewer fix verification on the new immutable HEAD.
+  merge_allowed: false
+
+transport:
+  method: repository_file
+  packet_path: reports/2026-08-30-pr-3-design-fix-verification-handoff.yaml
+  final_publication_note: >-
+    The packet cannot contain its own future commit SHA. Final PR HEAD and exact-head CI
+    evidence are checked after this packet is committed and recorded in the PR review/comment.
