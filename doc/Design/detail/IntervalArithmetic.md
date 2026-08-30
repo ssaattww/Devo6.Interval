@@ -6,139 +6,141 @@
 - 対象ライブラリ: `Devo6.Interval`
 - 設計対象: IEEE 754 binary64 (`double`) を端点とする bare interval
 - 基本設計: `doc/Design/basic/IntervalArithmetic.md`
-- 作成日: 2026-08-29
+- 初版: 2026-08-29
+- 最終更新: 2026-08-30
+- 設計版: 2
 
 本書は、基本設計で決定した区間意味論、`[-Lower, Upper]` 内部表現、外向き丸めおよび SIMD 方針を、実装可能な粒度まで具体化する。
 
-## 2. 開発フェーズの評価と結論
+設計版2では、PR #3 の exhaustive design review で示された次の有効指摘を反映した。
+
+- `F-PR3-001`: 乗除算の方向付き丸めを、subnormal、overflow、残差tieを含む疑似コードへ確定
+- `F-PR3-002`: AVX2/SSE2 と x86 FMA capability を分離
+- `F-PR3-004`: IEEE 1788.1 conformance matrix と固定 corpus を定義
+- `F-PR3-005`: exact rational、inari、kv の責務と再現可能な参照harnessを定義
+- `F-PR3-006`: Linux x64 / Linux ARM64 のCI matrixを定義
+- `F-PR3-007`: 閾値、scaled比較、残差tie、overflowの決定的fixtureを定義
+- `F-PR3-008`: native backendを後続benchmark gateへ明示的に延期
+
+`F-PR3-003` は exhaustive review で `withdrawn_erratum` とされたため、有効な実装指摘としては扱わない。
+
+## 2. 開発フェーズ
 
 次の順序で開発する。
 
-1. SIMD を使用しない四則演算対応のパイロット版を作成する。
-2. パイロット版の利用結果を基に、基本 `Interval` API を確定する。
-3. 確定した API を変更せず、SIMD バックエンドを追加する。
+1. SIMDを使用しないmanaged scalar四則演算パイロットを作成する。
+2. パイロットの利用結果を基に、基本`Interval` APIを確定する。
+3. 確定したAPIを変更せず、SIMD backendを追加する。
 4. 四則演算以外の区間操作および初等関数を段階的に追加する。
 
-この順序は妥当である。区間意味論と公開 API の問題を、SIMD 最適化の問題から分離できるためである。
+この順序により、区間意味論と公開APIの問題を、CPU命令およびSIMD最適化の問題から分離する。
 
-ただし、パイロット版の対象は演算子 `+`, `-`, `*`, `/` だけには限定しない。API を評価するため、次の最小限の値型契約も同じ段階で実装する。
+### 2.1 Phase 0: 設計・検証基盤
 
-- 区間生成と入力検証
-- `Empty`, `Entire`, `Zero`
-- `Lower`, `Upper`
-- `IsEmpty`, `IsEntire`, `IsSingleton`
-- 等値比較と Hash
-- 単項マイナス
-- 特殊値および signed zero の正規化
-- 診断用文字列表現
-
-これらがない状態では、演算結果、例外、特殊値の扱いを利用側から評価できず、API 確定後に破壊的変更が発生しやすい。
-
-## 3. フェーズ定義
-
-### 3.1 Phase 0: 設計・検証基盤
-
-本書の作成を Phase 0 とする。
+本書の確定をPhase 0とする。
 
 成果物:
 
-- 公開 API 候補
+- 公開API候補
 - 内部不変条件
 - 四則演算アルゴリズム
 - 方向付き丸めアルゴリズム
-- TDD のテスト分類
-- 参照実装との比較方法
-- API 確定条件
-- SIMD 導入条件
+- standards conformance matrix
+- TDDの実装順序と決定的fixture
+- exact rational oracle
+- pinned reference harness
+- x64 / ARM64 CI matrix
+- API確定条件
+- SIMD導入条件
 
 完了条件:
 
-- Phase 1 が追加の基本設計判断なしで開始できる。
-- 未確定事項が Phase 1 の実装を妨げない範囲に限定されている。
+- Phase 1が追加の数値アルゴリズム判断なしで開始できる。
+- すべての許可された方向付き丸めprimitive入力について、返すbinary64値が一意に定まる。
+- Phase 1に残す未確定事項が公開APIの評価項目に限定されている。
 
-### 3.2 Phase 1: managed scalar パイロット版
+### 2.2 Phase 1: managed scalarパイロット
 
 目的:
 
-- SIMD や native ライブラリに依存せず、区間意味論と API を検証する。
-- 四則演算について、真値を包含するだけでなく、正しく方向丸めされた binary64 端点を返す。
-- 後続 SIMD 実装の基準となる scalar reference backend を作る。
+- SIMDやnative libraryに依存せず、区間意味論とAPIを検証する。
+- 四則演算についてtightな外向き丸め結果を返す。
+- 後続SIMD実装の基準となるscalar reference backendを作る。
 
 対象:
 
-- `Interval` 値型
-- 区間生成と基本状態
+- `Interval`値型
+- 区間生成と入力検証
+- `Empty`、`Entire`、`Zero`
+- `Lower`、`Upper`
+- `IsEmpty`、`IsEntire`、`IsSingleton`
+- 等値比較とHash
 - 加算、減算、単項マイナス、乗算、除算
-- managed の方向付き丸め
-- 単体テスト、参照値テスト、ランダム試験
+- managed方向付き丸め
+- signed zeroと特殊値の正規化
+- 診断用文字列表現
+- exact rational oracle
+- standards conformance test
+- pinned reference corpus comparison
+- Linux x64 / Linux ARM64 CI
+- 失敗診断artifact
 - 最小サンプル
-- CI と失敗診断 artifact
 
 対象外:
 
 - SIMD intrinsics
-- CPU の丸めモード変更
-- native ライブラリ呼び出し
-- `sqrt`, `pow`, `exp`, `log`, `sin`, `cos` 等
+- processまたはthreadの浮動小数点丸めモード変更
+- native library呼び出し
+- `sqrt`、`pow`、`exp`、`log`、`sin`、`cos`等
 - decorated interval / NaI
 - 厳密な文字列からの区間変換
 - 区間分割、Affine Arithmetic、Taylor Model
 
-### 3.3 Phase 2: 基本 API 確定
+### 2.3 Phase 2: 基本API確定
 
-目的:
-
-- Phase 1 の利用性、特殊値、例外、命名および性能特性を確認し、基本 API を固定する。
+Phase 1の利用性、特殊値、例外、命名および性能特性を確認し、基本`Interval` APIを固定する。
 
 確定対象:
 
 - package / assembly / namespace
-- `Interval` の生成方法
+- `Interval`の生成方法
 - 基本プロパティ
-- `Empty` / `Entire` の扱い
+- `Empty` / `Entire`の扱い
 - 演算子
-- 等値性と Hash
+- 等値性とHash
 - 例外種別
-- signed zero の公開規則
-- `ToString` の契約範囲
-- scalar 値との変換・演算を提供するか
-- generic math interface を提供するか
+- signed zeroの公開規則
+- `ToString`の契約範囲
+- scalar値との変換・演算
+- generic math interface
 
-Phase 2 完了後は、基本 `Interval` API に対する破壊的変更を原則として行わない。後続の SIMD や初等関数は、既存 API の内部差し替えまたは追加 API とする。
+Phase 2完了後は、基本`Interval` APIに対する破壊的変更を原則として行わない。後続のSIMDや初等関数は、内部差し替えまたは追加APIとする。
 
-### 3.4 Phase 3: SIMD バックエンド
+### 2.4 Phase 3: SIMD backend
 
 目的:
 
-- Phase 1 の scalar reference と同じ意味論および端点を維持したまま高速化する。
+- Phase 1のscalar referenceと同じ意味論およびcanonical endpoint bit patternを維持したまま高速化する。
 
 実装順:
 
-1. scalar reference と SIMD backend の差分試験基盤を追加する。
-2. SIMD に適した内部ロード・ストアを追加する。
-3. 加算・減算から SIMD 化する。
-4. 乗算・除算の符号分類を SIMD 化する。
-5. AVX-512 の方向付き丸めを使用する batch kernel を追加する。
-6. AVX2 / SSE2 / ARM64 について、誤差補償型 SIMD の効果を計測して採否を決定する。
+1. scalar referenceとSIMD backendの差分試験基盤を追加する。
+2. SIMD向けロード・ストアを追加する。
+3. 加算・減算のbatch kernelを追加する。
+4. AVX-512の方向付き丸め付き乗算・除算batch kernelを追加する。
+5. AVX2 + FMA、AVX2 without FMA、SSE2、ARM64を個別に評価する。
+6. 正確性と性能の両ゲートを通過した経路だけをproduction dispatchへ含める。
 
-AVX-512 の packed embedded rounding は `Vector512<double>` に対して利用できる。一方、`Vector128<double>` の embedded-rounding API は scalar lane 用であり、2 lane を同時に方向丸めする packed API ではない。
+単一区間演算を無条件に最大幅vectorへ載せない。単一区間operatorは、benchmarkでscalarより有利と確認できた場合に限り内部backendを切り替える。
 
-したがって、AVX-512 の利点を直接得やすいのは次の形式である。
-
-```text
-[-L0, U0, -L1, U1, -L2, U2, -L3, U3]
-```
-
-これは 4 区間を 1 個の `Vector512<double>` に配置する batch 処理である。単一の `Interval` 演算を無条件に `Vector512` へ載せる設計にはしない。単一演算は benchmark で scalar より有利と確認できた場合に限り SIMD backend へ切り替える。
-
-### 3.5 Phase 4: 四則演算以外
+### 2.5 Phase 4: 四則演算以外
 
 次の順序で小さな単位に分ける。
 
 1. 集合・判定操作
    - `Contains`
-   - subset 判定
-   - overlap 判定
+   - subset判定
+   - overlap判定
    - intersection
    - convex hull
 2. 基本代数関数
@@ -163,49 +165,48 @@ AVX-512 の packed embedded rounding は `Vector512<double>` に対して利用�
    - 厳密な文字列変換
    - interval splitting
 
-周期関数と decorated interval は API と正確性の負荷が大きいため、四則演算直後の同一作業単位には含めない。
+周期関数、厳密な文字列変換、decorated intervalはAPIと正確性の負荷が大きいため、四則演算直後の同一作業単位には含めない。
 
-## 4. 対象環境
+## 3. 対象環境
 
-### 4.1 Target Framework
+### 3.1 Target Framework
 
-Phase 1 の対象を `net10.0` とする。
+Phase 1は`net10.0`を対象とする。
 
-理由:
+- パイロット段階では複数target frameworkの検証行列を増やさない。
+- 後続のhardware intrinsicsも同じtarget framework上で評価する。
+- 古いtarget frameworkの追加はPhase 2で利用者要件として判断する。
 
-- 2026-08-29 時点で .NET 10 は LTS である。
-- 後続の hardware intrinsics を同じ target framework 上で利用できる。
-- 複数 target framework の同時対応による検証行列を、パイロット段階では増やさない。
-
-古い target framework の追加は Phase 2 で利用者要件として判断する。
-
-### 4.2 対象アーキテクチャ
+### 3.2 対象アーキテクチャ
 
 Phase 1:
 
-- x64
-- ARM64
+- Linux x64
+- Linux ARM64
 
-Phase 1 は pure managed とし、同じ scalar algorithm を使用する。
+両アーキテクチャで同じpure-managed scalar algorithmを実行する。
 
 Phase 3:
 
-- x64 AVX-512: packed embedded-rounding backend
-- x64 AVX2 / SSE2: 誤差補償型 SIMD の検証対象
-- ARM64 AdvSimd: 誤差補償型 SIMD の検証対象
-- 未対応 CPU: Phase 1 scalar backend
+- x64 AVX-512F
+- x64 AVX2 + FMA
+- x64 AVX2 without FMA
+- x64 AVX + FMA without AVX2
+- x64 SSE2 without FMA
+- ARM64 AdvSimd
+- 未対応環境のscalar fallback
 
-### 4.3 Runtime dependency
+### 3.3 Runtime dependency
 
-Phase 1 の production package は BCL 以外の runtime dependency を持たない。
+Phase 1のproduction packageはBCL以外のruntime dependencyを持たない。
 
-`kv` と `inari` は参照実装およびテスト比較対象とし、production runtime からは呼び出さない。
+`inari`、`kv`、ITF1788およびそれらのtoolchainは、test corpus生成・差分検証にのみ使用し、production packageから呼び出さない。
 
-## 5. 公開 API 候補
+## 4. 公開API候補
 
-Phase 1 では以下の API を実装候補とする。Phase 2 までは pilot API とし、Phase 2 完了時に固定する。
+Phase 1では以下をpilot APIとし、Phase 2完了時に固定する。
 
-### 5.1 Assembly と namespace
+### 4.1 Assemblyとnamespace
 
 ```text
 Assembly / package: Devo6.Interval
@@ -213,9 +214,7 @@ Namespace:          Devo6.Numerics
 Type:               Interval
 ```
 
-`Devo6.Interval.Interval` という重複した完全修飾名を避けるため、pilot namespace は `Devo6.Numerics` とする。namespace は Phase 2 の確定対象である。
-
-### 5.2 型定義
+### 4.2 型定義
 
 ```csharp
 namespace Devo6.Numerics;
@@ -258,15 +257,9 @@ public readonly struct Interval : IEquatable<Interval>
 }
 ```
 
-### 5.3 生成
+### 4.3 生成
 
-#### 通常区間
-
-```csharp
-var x = new Interval(lower, upper);
-```
-
-次の条件を満たす場合に生成できる。
+`new Interval(lower, upper)`は次を満たす場合に成功する。
 
 ```text
 lower <= upper
@@ -276,106 +269,45 @@ lower is not NaN
 upper is not NaN
 ```
 
-不正な場合は `ArgumentException` を送出する。
+不正な場合は`ArgumentException`を送出する。`lower > upper`を自動的に`Empty`へ変換しない。
 
-`lower > upper` は自動的に `Empty` へ変換しない。入力ミスと数学上の空区間生成を区別するためである。空区間は `Interval.Empty` を使用する。
+`TryCreate`は不正入力で`false`を返し、out値へ`Interval.Empty`を設定する。
 
-#### TryCreate
+`Point(value)`は有限の`double`のみを受け入れる。`NaN`および`±Infinity`は実数の点ではないため拒否する。
 
-```csharp
-if (Interval.TryCreate(lower, upper, out var interval))
-{
-    // valid interval
-}
-```
-
-不正な場合は `false` を返し、`interval` には `Interval.Empty` を設定する。
-
-#### 点区間
-
-```csharp
-var x = Interval.Point(value);
-```
-
-有限の `double` のみを受け入れ、`[value, value]` を生成する。
-
-`NaN`, `+Infinity`, `-Infinity` は実数の点ではないため拒否する。
-
-### 5.4 定数
-
-#### Empty
-
-```csharp
-Interval.Empty
-```
-
-空集合を表す。
-
-#### Entire
-
-```csharp
-Interval.Entire
-```
+### 4.4 定数とdefault
 
 ```text
-[-Infinity, +Infinity]
+Empty  = 空集合
+Entire = [-Infinity, +Infinity]
+Zero   = [-0.0, +0.0]
 ```
 
-を表す。
+`default(Interval)`は`Interval.Zero`と同値にする。
 
-#### Zero
+### 4.5 Lower / Upper
 
-```csharp
-Interval.Zero
-```
-
-```text
-[-0.0, +0.0]
-```
-
-を正規形とする。
-
-`default(Interval)` は内部フィールドがともに `+0.0` となるため、`Interval.Zero` と同値にする。この性質をテストで固定する。
-
-### 5.5 Lower / Upper
-
-非空区間では正規化済みの端点を返す。
-
-空区間では両方とも `double.NaN` を返す。
+非空区間では正規化済みの端点を返す。空区間では両方とも`double.NaN`を返す。
 
 ```text
 Interval.Empty.Lower -> NaN
 Interval.Empty.Upper -> NaN
 ```
 
-下限が 0 の場合は `-0.0`、上限が 0 の場合は `+0.0` を返す。
+下限が0の場合は`-0.0`、上限が0の場合は`+0.0`を返す。
 
-### 5.6 状態プロパティ
+### 4.6 演算時の例外
 
-```text
-IsEmpty     Empty の場合に true
-IsEntire    [-Infinity, +Infinity] の場合に true
-IsSingleton 非空かつ Lower == Upper の場合に true
-```
-
-`Empty.IsSingleton` は `false` とする。
-
-### 5.7 演算子と例外
-
-公開 API で生成された `Interval` は常に有効であるため、四則演算は数学的な定義域問題を例外で表現しない。
-
-例:
+公開APIから生成された`Interval`は常に有効である。数学的な定義域問題は区間値で表現し、四則演算時に`DivideByZeroException`等を送出しない。
 
 ```text
 [1, 2] / [0, 0]  -> Empty
 [1, 2] / [-1, 1] -> Entire
 ```
 
-演算時に `DivideByZeroException` は送出しない。
+### 4.7 Phase 1で提供しないAPI
 
-### 5.8 scalar double との演算
-
-次は Phase 1 では提供しない。
+次はPhase 2で判断する。
 
 ```csharp
 interval + 1.0
@@ -383,39 +315,23 @@ interval + 1.0
 (Interval)1.0
 ```
 
-理由:
+`INumber<TSelf>`もPhase 1では実装しない。区間には自然な全順序がなく、通常数値型の契約をそのまま満たさないためである。
 
-- implicit conversion が `NaN` や infinity で例外を生じる API になる。
-- overload 数が増え、API 評価範囲が広がる。
-- `Interval.Point(value)` で明示的に代替できる。
+### 4.8 文字列表現
 
-Phase 2 で利用性を確認して追加可否を決定する。
-
-### 5.9 generic math
-
-`INumber<TSelf>` は区間に自然な全順序や通常の数値変換を要求するため、Phase 1 では実装しない。
-
-個別の operator interface についても Phase 2 で判断する。
-
-### 5.10 文字列表現
-
-Phase 1 の `ToString()` は診断用途とする。
-
-候補:
+Phase 1の`ToString()`は診断用途とする。
 
 ```text
-Empty       -> "Empty"
-[1, 2]      -> "[1, 2]"
-Entire      -> "[-Infinity, Infinity]"
+Empty  -> "Empty"
+[1, 2] -> "[1, 2]"
+Entire -> "[-Infinity, Infinity]"
 ```
 
-数値は invariant culture と round-trip format を使用する。
+数値はinvariant cultureとround-trip formatを使用する。永続化、通信、round-trip parsingの契約とはしない。
 
-文字列形式を永続化・通信・round-trip parsing の契約としては扱わない。正式な format / parse 契約は Phase 4 で設計する。
+## 5. 内部表現
 
-## 6. 内部表現
-
-### 6.1 Phase 1 の物理表現
+### 5.1 Phase 1の物理表現
 
 ```csharp
 public readonly struct Interval
@@ -425,53 +341,26 @@ public readonly struct Interval
 }
 ```
 
-外部区間 `[lower, upper]` を次のように保持する。
+外部区間`[lower, upper]`を次のように保持する。
 
 ```text
 _negatedLower = -lower
 _upper        =  upper
 ```
 
-### 6.2 正規表現
-
-#### 非空区間
+### 5.2 canonical state
 
 ```text
-[-Lower, Upper]
+Zero   = [+0.0, +0.0]
+Entire = [+Infinity, +Infinity]
+Empty  = [canonical-qNaN, canonical-qNaN]
 ```
 
-#### Zero
+EmptyのNaN payloadは公開契約にしないが、production実装では固定bit patternを使用する。
 
-```text
-[+0.0, +0.0]
-```
+### 5.3 内部不変条件
 
-外部取得時は次になる。
-
-```text
-Lower = -(+0.0) = -0.0
-Upper = +0.0
-```
-
-#### Entire
-
-```text
-[+Infinity, +Infinity]
-```
-
-#### Empty
-
-固定した quiet NaN bit pattern を 2 lane に格納する。
-
-```text
-[canonical-qNaN, canonical-qNaN]
-```
-
-NaN payload は公開 API の契約にはしないが、同一 runtime 内での決定性を得るため production 実装では固定する。
-
-### 6.3 内部不変条件
-
-非空区間は次を満たす。
+非空区間:
 
 ```text
 !IsNaN(_negatedLower)
@@ -481,18 +370,28 @@ Lower != +Infinity
 Upper != -Infinity
 ```
 
-Empty は次を満たす。
+Empty:
 
 ```text
 IsNaN(_negatedLower)
 IsNaN(_upper)
 ```
 
-内部処理で片方だけ NaN の状態を作成してはならない。
+片側だけNaNの状態を作成してはならない。
 
-### 6.4 raw constructor
+### 5.4 zero正規化
 
-演算結果用に validation を省略する private/internal constructor を設ける。
+constructor入力と演算結果の両方で次へ正規化する。
+
+```text
+external lower zero -> -0.0
+external upper zero -> +0.0
+internal Zero       -> [+0.0, +0.0]
+```
+
+### 5.5 raw constructor
+
+演算結果用にvalidationを省略するprivate/internal constructorを設ける。
 
 ```csharp
 private Interval(
@@ -501,29 +400,15 @@ private Interval(
     RawIntervalTag _);
 ```
 
-raw constructor を呼ぶ側は次を保証する。
+呼び出し側は、Emptyまたは有効なcanonical internal representationであることを保証する。
 
-- Empty または有効な正規化済み内部表現である。
-- zero の符号が正規化済みである。
-- 片側 NaN を含まない。
+### 5.6 レイアウト非公開
 
-### 6.5 レイアウト非公開
+内部が2個の`double`であること、size、field order、blittable ABIはpublic contractにしない。public field、raw bytes、`Vector128<double>`へのpublic castも提供しない。
 
-内部が 2 個の `double` であること、16 byte であること、フィールド順序は public API 契約にしない。
+## 6. 内部コンポーネント
 
-次を公開しない。
-
-- public field
-- `ref` での内部表現取得
-- `Vector128<double>` への public cast
-- raw bytes を前提とする serializer
-- blittable ABI の保証
-
-これにより Phase 3 で格納型を変更できる。
-
-## 7. 内部コンポーネント
-
-### 7.1 予定ファイル構成
+### 6.1 予定構成
 
 ```text
 src/Devo6.Interval/
@@ -546,75 +431,87 @@ tests/Devo6.Interval.Unit.Tests/
   DivisionTests.cs
   DirectedRoundingTests.cs
   SpecialValueTests.cs
+  Conformance/
+    Ieee1788Phase1Tests.cs
+    ConformanceCaseReader.cs
   ReferenceOracle/
     Binary64Rational.cs
     DirectedRoundingOracle.cs
+    GoldenCaseReader.cs
+
+tests/ReferenceData/
+  ieee1788-phase1.jsonl
+  directed-rounding-boundaries.jsonl
+  reference-differential.jsonl
+  reference-lock.json
+
+tools/reference-oracles/
+  inari-adapter/
+  kv-adapter/
+  generate-reference-data.*
 ```
 
-### 7.2 責務
+### 6.2 責務
 
-#### Interval
+`Interval`:
 
 - public value semantics
 - validation
 - properties
-- operators の entry point
+- operators entry point
 - equality / Hash
 
-#### ScalarIntervalKernel
+`ScalarIntervalKernel`:
 
 - Empty propagation
 - 符号分類
 - 四則演算の区間アルゴリズム
-- 正規化済み raw interval の生成
+- canonical raw interval生成
 
-#### DirectedRounding
+`DirectedRounding`:
 
-- scalar binary64 の `AddUp`, `MultiplyUp`, `DivideUp`
-- 必要な down-direction helper
-- overflow / underflow / subnormal 処理
-- `NextUp`, `NextDown`
+- `AddUp` / `AddDown`
+- `MultiplyUp` / `MultiplyDown`
+- `DivideUp` / `DivideDown`
+- overflow / underflow / subnormal処理
+- `NextUp` / `NextDown`
 
-#### IntervalCanonicalizer
+`IntervalCanonicalizer`:
 
-- lower zero を `-0.0` へ正規化
-- upper zero を `+0.0` へ正規化
-- Empty の canonical NaN 化
+- endpoint zero正規化
+- Empty canonicalization
 
-#### IntervalSignClass
-
-区間を次に分類する。
+`IntervalSignClass`:
 
 ```text
 Zero        [0, 0]
-NonNegative 0 <= Lower
-NonPositive Upper <= 0
+NonNegative 0 <= Lower かつZeroではない
+NonPositive Upper <= 0 かつZeroではない
 Mixed       Lower < 0 < Upper
 ```
 
-Zero を先に判定し、`NonNegative` と `NonPositive` の重複を避ける。
+Phase 1のhot pathにはinterface、virtual call、delegate tableを導入しない。
 
-### 7.3 hot path の dispatch
+## 7. 方向付き丸めの共通契約
 
-Phase 1 では operator から `ScalarIntervalKernel` を直接呼ぶ。
+### 7.1 定義
 
-interface、virtual method、delegate table は hot path に導入しない。
-
-Phase 3 では `Avx512F.IsSupported` 等の intrinsic support check を static method 内で使用し、JIT が非対応分岐を除去できる構造を優先する。
-
-## 8. 方向付き丸め
-
-### 8.1 契約
-
-`DirectedRounding` は、許可された binary64 operand に対して次を返す。
+許可されたbinary64 operandに対して次を返す。
 
 ```text
-AddUp(x, y)      = 最小の double z で x + y <= z
-MultiplyUp(x, y) = 最小の double z で x * y <= z
-DivideUp(x, y)   = 最小の double z で x / y <= z
+AddUp(x, y)        = 最小のdouble zで、実数としてのx+y <= z
+AddDown(x, y)      = 最大のdouble zで、z <= 実数としてのx+y
+MultiplyUp(x, y)   = 最小のdouble zで、実数としてのx*y <= z
+MultiplyDown(x, y) = 最大のdouble zで、z <= 実数としてのx*y
+DivideUp(x, y)     = 最小のdouble zで、実数としてのx/y <= z
+DivideDown(x, y)   = 最大のdouble zで、z <= 実数としてのx/y
 ```
 
-下向き丸めは符号反転で導出する。
+`NextUp`は`Math.BitIncrement`、`NextDown`は`Math.BitDecrement`を使用する。通常演算後に無条件で1 ULP広げない。
+
+### 7.2 下向き演算の関係
+
+実装では次の恒等関係を利用できる。
 
 ```text
 AddDown(x, y)      = -AddUp(-x, -y)
@@ -623,243 +520,382 @@ MultiplyDown(x, y) = -MultiplyUp(-x, y)
 DivideDown(x, y)   = -DivideUp(-x, y)
 ```
 
-zero sign は返却後に区間端点として正規化する。
+本書では分岐の完全性を明確にするため、乗除算のUp/Down条件をそれぞれ記載する。
 
-### 8.2 特殊 operand と禁止 operand
+### 7.3 primitiveへ渡さない組合せ
 
-方向付き丸め primitive は、通常計算より前に infinity と zero を分岐する。
-
-- 加算で片方が infinity、もう片方が有限値または同符号 infinity の場合は、その infinity を返す。
-- 乗算で片方が infinity、もう片方が nonzero の場合は符号付き infinity を返す。
-- 除算で numerator が infinity、denominator が有限 nonzero の場合は符号付き infinity を返す。
-- 除算で numerator が有限、denominator が infinity の場合は符号付き zero を返し、区間側で canonical zero に正規化する。
-- 除算で numerator が zero、denominator が有限 nonzero の場合は符号付き zero を返す。
-
-次の IEEE 754 上 undefined な組み合わせは、区間アルゴリズム側で分岐し、方向付き丸め primitive へ渡さない。
+区間kernelは次を事前分岐し、方向付き丸めprimitiveへ渡さない。
 
 ```text
 +Infinity + -Infinity
 0 * Infinity
 0 / 0
 Infinity / Infinity
+denominator == 0
+NaN operand
 ```
 
-`DirectedRounding` の Debug build では前提条件を assert する。
+Debug buildでは前提条件をassertする。
 
-### 8.3 NextUp / NextDown
+### 7.4 overflowの方向別結果
 
-隣接 binary64 の取得には `Math.BitIncrement` と `Math.BitDecrement` を使用する。
+有限な正確値がbinary64の有限範囲を超える場合:
 
-通常演算の結果を無条件で 1 ULP 外側へ広げる方式は採用しない。
+```text
+positive overflow:
+  Up   -> +Infinity
+  Down -> +double.MaxValue
 
-理由:
+negative overflow:
+  Up   -> -double.MaxValue
+  Down -> -Infinity
+```
 
-- 演算結果が正確だった場合にも不要に区間が広がる。
-- scalar reference と SIMD backend の bitwise equivalence を得にくい。
-- `kv` / `inari` 相当の tight endpoint を目標にできない。
+operandそのものがInfinityで正確値も非有界の場合は、該当するsigned Infinityを返す。
 
-誤差の符号を判定し、必要な場合にだけ隣接値へ移動する。
+## 8. 加算・減算の方向付き丸め
 
-### 8.4 加算
+### 8.1 TwoSum
 
-finite operand で overflow がない場合、TwoSum により次を得る。
+有限operandかつoverflowなしの場合、TwoSumで次を得る。
 
 ```text
 s = roundNearest(x + y)
-e = (x + y) - s
+e = exact(x + y) - s
 ```
 
 概念コード:
 
 ```csharp
-var s = x + y;
-var bVirtual = s - x;
-var e = (x - (s - bVirtual)) + (y - bVirtual);
+static (double Sum, double Error) TwoSum(double x, double y)
+{
+    double s = x + y;
+    double bVirtual = s - x;
+    double e = (x - (s - bVirtual)) + (y - bVirtual);
+    return (s, e);
+}
 ```
 
-上向き丸め:
+### 8.2 AddUp / AddDown
 
 ```text
-e > 0 -> NextUp(s)
-e <= 0 -> s
+AddUp:
+  error > 0 -> NextUp(sum)
+  error <= 0 -> sum
+
+AddDown:
+  error < 0 -> NextDown(sum)
+  error >= 0 -> sum
 ```
 
-下向き丸め:
+Infinityとfinite overflowは§7.4に従って先に処理する。
+
+### 8.3 減算
 
 ```text
-e < 0 -> NextDown(s)
-e >= 0 -> s
+SubtractUp(x, y)   = AddUp(x, -y)
+SubtractDown(x, y) = AddDown(x, -y)
 ```
 
-overflow 時:
+## 9. 乗算の方向付き丸め
 
-```text
-正の overflow:
-  Up   -> +Infinity
-  Down -> double.MaxValue
-
-負の overflow:
-  Up   -> -double.MaxValue
-  Down -> -Infinity
-```
-
-### 8.5 減算
-
-上向き減算は加算へ変換する。
-
-```text
-SubtractUp(x, y) = AddUp(x, -y)
-```
-
-下向きは次で得る。
-
-```text
-SubtractDown(x, y) = -SubtractUp(y, x)
-```
-
-### 8.6 乗算
-
-通常領域では次を用いる。
+### 9.1 定数
 
 ```csharp
-var product = x * y;
-var error = Math.FusedMultiplyAdd(x, y, -product);
+SmallProductThreshold = 2^-969;
+ProductScale          = 2^537;
 ```
 
-`Math.FusedMultiplyAdd` は `x * y - product` を 1 回の丸めで求めるため、誤差符号の判定に使用できる。
+`abs(product) >= 2^-969`は通常残差経路、`abs(product) < 2^-969`はscaled経路とする。閾値一致は通常経路である。
+
+### 9.2 TwoProductFma
+
+```csharp
+static (double Product, double Error) TwoProductFma(double x, double y)
+{
+    double product = x * y;
+    double error = Math.FusedMultiplyAdd(x, y, -product);
+    return (product, error);
+}
+```
+
+通常経路では、選択した閾値によりnonzero residualがbinary64で表現可能な範囲にあることを前提とする。この前提はexact rational oracleの境界試験で固定する。
+
+### 9.3 MultiplyUp
+
+以下を実装仕様とする。
 
 ```text
-error > 0 -> 上向き結果は NextUp(product)
-error <= 0 -> 上向き結果は product
+MultiplyUp(x, y):
+  require x,y are not NaN
+  require not (x == 0 and y is Infinity)
+  require not (y == 0 and x is Infinity)
+
+  if x == 0 or y == 0:
+      return x * y
+
+  if x or y is Infinity:
+      return signed Infinity of x*y
+
+  r = roundNearest(x * y)
+
+  if r == +Infinity:
+      return +Infinity                 // finite positive overflow
+
+  if r == -Infinity:
+      return -double.MaxValue          // finite negative overflow
+
+  if abs(r) >= 2^-969:
+      r2 = FMA(x, y, -r)
+      if r2 > 0:
+          return NextUp(r)
+      return r
+
+  sx = x * 2^537
+  sy = y * 2^537
+  (s, s2) = TwoProductFma(sx, sy)
+  t = (r * 2^537) * 2^537
+
+  if t < s or (t == s and s2 > 0):
+      return NextUp(r)
+  return r
 ```
 
-積が subnormal 領域に近い場合、誤差自体が underflow して 0 になり得る。そのため `kv` の no-hardware-rounding 実装を参照し、閾値以下では scaling を行う。
+scaled経路では`2^537`による各operandのscaleと`r`の2段scaleがoverflowしないことを、分岐条件とnonzero binary64 operandの指数範囲から保証する。2の整数乗によるscaleは、その範囲内では正確である。
 
-設計定数:
+### 9.4 MultiplyDown
 
 ```text
-SmallProductThreshold = 2^-969
-ProductScale          = 2^537
+MultiplyDown(x, y):
+  同じpreconditionとzero / Infinity分岐を行う
+
+  r = roundNearest(x * y)
+
+  if r == +Infinity:
+      return +double.MaxValue          // finite positive overflow
+
+  if r == -Infinity:
+      return -Infinity                 // finite negative overflow
+
+  if abs(r) >= 2^-969:
+      r2 = FMA(x, y, -r)
+      if r2 < 0:
+          return NextDown(r)
+      return r
+
+  sx = x * 2^537
+  sy = y * 2^537
+  (s, s2) = TwoProductFma(sx, sy)
+  t = (r * 2^537) * 2^537
+
+  if t > s or (t == s and s2 < 0):
+      return NextDown(r)
+  return r
 ```
 
-概念処理:
-
-1. infinity / zero と overflow を先に処理する。
-2. 通常の product を計算する。
-3. `abs(product) >= 2^-969` の場合は FMA residual の符号を使用する。
-4. それ未満の場合は operand を `2^537` 倍した積を評価する。
-5. scaled exact relation から元の product が真値より小さいかを判定する。
-6. 必要な場合だけ `NextUp` / `NextDown` する。
-
-production 実装で `BigInteger` は使用しない。
-
-### 8.7 除算
-
-通常の quotient を求める。
+### 9.5 scaled比較の意味
 
 ```text
-q = roundNearest(x / y)
+t        = roundNearest(x*y)を2^1074倍した値
+s + s2   = x*yを2^1074倍したexact product decomposition
 ```
 
-次に `q * y` と `x` の大小を、FMA を用いた exact-product decomposition で判定する。
+したがって:
+
+- `t < s`、または`t == s && s2 > 0`: `r`は真値より小さい。
+- `t > s`、または`t == s && s2 < 0`: `r`は真値より大きい。
+- `t == s && s2 == 0`: `r`は正確である。
+
+このtie条件を省略してはならない。
+
+## 10. 除算の方向付き丸め
+
+### 10.1 定数と厳密な境界
+
+```csharp
+SmallNumeratorThreshold = 2^-969;
+LargeDenominatorLimit   = 2^918;
+DivisionScale           = 2^105;
+MinimumSubnormal        = 2^-1074;
+```
+
+境界判定は次で固定する。
 
 ```text
-q * y < x -> q は真の商より小さいため Up は NextUp(q)
-q * y >= x -> Up は q
+abs(xn) < 2^-969  -> small numerator分岐
+abs(xn) == 2^-969 -> 通常経路
+
+small numeratorかつabs(yn) < 2^918  -> 両operandを2^105倍
+small numeratorかつabs(yn) >= 2^918 -> zero/min-subnormal early return
 ```
 
-`y < 0` の場合は両 operand の符号を反転して denominator を正に正規化してから比較する。
+`abs(yn) == 2^918`はearly-return側である。これにより`yn * 2^105`のoverflowを避ける。
 
-subnormal numerator については `kv` の no-hardware-rounding 実装を参照し、必要な scaling を行う。
+### 10.2 denominator正符号化
 
-設計定数:
+finite nonzero denominatorについて、比較前に必ず`yn > 0`へ正規化する。
 
 ```text
-SmallNumeratorThreshold = 2^-969
-LargeDenominatorLimit   = 2^918
-DivisionScale           = 2^105
-MinimumSubnormal        = 2^-1074
+if y < 0:
+    xn = -x
+    yn = -y
+else:
+    xn = x
+    yn = y
 ```
 
-overflow 時は乗算と同じ方向別 saturation を行う。
+`xn/yn`は元の`x/y`と等しい。
 
-### 8.8 参照実装移植とライセンス
+### 10.3 special value
 
-方向付き丸めの具体実装で `kv` または `inari` のコードを翻案・移植する場合は、次を必須とする。
+区間kernelでundefined pairを除外した後、primitiveは次を扱う。
 
-- 参照元 commit SHA を source comment に記録する。
-- MIT License の copyright と permission notice を third-party notice に含める。
-- 参照元テストケースを移植した場合も出典を記録する。
+```text
+x == 0, finite nonzero y -> signed zero
+finite nonzero x, y is Infinity -> signed zero
+x is Infinity, finite nonzero y -> signed Infinity
+```
 
-アルゴリズムを参照しただけであっても、設計書と実装 report に参照元を記録する。
+finite値同士のoverflowは§7.4に従う。
 
-## 9. 四則演算
+### 10.4 DivideUp
 
-以下では `RD` を下向き丸め、`RU` を上向き丸めとする。
+```text
+DivideUp(x, y):
+  require x,y are not NaN
+  require y != 0
+  require not (x is Infinity and y is Infinity)
 
-全演算で、operand のどちらかが Empty の場合は Empty を返す。
+  handle zero and Infinity cases
 
-### 9.1 加算
+  normalize to xn / yn with yn > 0
+
+  if abs(xn) < 2^-969:
+      if abs(yn) < 2^918:
+          xn = xn * 2^105
+          yn = yn * 2^105
+      else:
+          if xn < 0:
+              return +0.0
+          else:
+              return +2^-1074
+
+  q = roundNearest(xn / yn)
+
+  if q == +Infinity:
+      return +Infinity
+
+  if q == -Infinity:
+      return -double.MaxValue
+
+  r  = roundNearest(q * yn)
+  r2 = FMA(q, yn, -r)
+
+  if r < xn or (r == xn and r2 < 0):
+      return NextUp(q)
+  return q
+```
+
+`r == xn`だけではexact relationを判定できない。`r2 < 0`ならexactな`q*yn`は`xn`より小さく、`q`は真の商より小さいため上向き補正が必要である。
+
+### 10.5 DivideDown
+
+```text
+DivideDown(x, y):
+  require x,y are not NaN
+  require y != 0
+  require not (x is Infinity and y is Infinity)
+
+  handle zero and Infinity cases
+
+  normalize to xn / yn with yn > 0
+
+  if abs(xn) < 2^-969:
+      if abs(yn) < 2^918:
+          xn = xn * 2^105
+          yn = yn * 2^105
+      else:
+          if xn < 0:
+              return -2^-1074
+          else:
+              return +0.0
+
+  q = roundNearest(xn / yn)
+
+  if q == +Infinity:
+      return +double.MaxValue
+
+  if q == -Infinity:
+      return -Infinity
+
+  r  = roundNearest(q * yn)
+  r2 = FMA(q, yn, -r)
+
+  if r > xn or (r == xn and r2 > 0):
+      return NextDown(q)
+  return q
+```
+
+`r2 > 0`ならexactな`q*yn`は`xn`より大きく、`q`は真の商より大きいため下向き補正が必要である。
+
+### 10.6 scaling後の残差表現可能性
+
+small numeratorをscaleする場合、最小nonzero binary64の`2^-1074`は`2^-969`へ移動する。これにより`q*yn`のproduct decompositionで必要な最下位bitがbinary64のsubnormal範囲に残る。
+
+`yn < 2^918`のstrict比較により、`yn * 2^105`はfinite範囲に収まる。large denominatorはscaleせず、符号と方向からtightなzero/min-subnormalを直接返す。
+
+## 11. 区間四則演算
+
+以下では`RD`を下向き丸め、`RU`を上向き丸めとする。operandのどちらかがEmptyならEmptyを返す。
+
+### 11.1 加算
 
 ```text
 [a, b] + [c, d]
-= [RD(a + c), RU(b + d)]
+= [RD(a+c), RU(b+d)]
 ```
 
 内部表現:
 
 ```text
-A = [-a, b]
-B = [-c, d]
-
-result = [RU(-a - c), RU(b + d)]
-       = [-RD(a + c), RU(b + d)]
+[-a, b] + [-c, d]
+= [RU(-a-c), RU(b+d)]
+= [-RD(a+c), RU(b+d)]
 ```
 
-Phase 1 scalar 実装でも、この内部表現に沿って上向き primitive を使用する。
-
-### 9.2 減算
+### 11.2 減算
 
 ```text
 [a, b] - [c, d]
-= [RD(a - d), RU(b - c)]
+= [RD(a-d), RU(b-c)]
 ```
 
-内部表現:
+内部表現では右operandのlane交換に相当する。
 
 ```text
 result.negatedLower = RU((-a) + d)
 result.upper        = RU(b + (-c))
 ```
 
-右 operand の lane を交換したものとの加算に相当する。
-
-### 9.3 単項マイナス
+### 11.3 単項マイナス
 
 ```text
 -[a, b] = [-b, -a]
-```
-
-内部表現では lane 交換だけで得られる。
-
-```text
 [-a, b] -> [b, -a]
 ```
 
-Empty は lane 交換後も Empty とする。
+内部表現ではlane交換で得る。
 
-### 9.4 乗算の符号分類
-
-区間 class:
+### 11.4 乗算の符号分類
 
 ```text
-Z: [0, 0]
-P: 0 <= lower かつ Zero ではない
-N: upper <= 0 かつ Zero ではない
+Z: [0,0]
+P: 0 <= lower かつZではない
+N: upper <= 0 かつZではない
 M: lower < 0 < upper
 ```
 
-`A = [a, b]`, `B = [c, d]` とする。
+`A=[a,b]`、`B=[c,d]`とする。
 
 | A | B | Lower | Upper |
 |---|---|---|---|
@@ -875,19 +911,13 @@ M: lower < 0 < upper
 | M | N | `RD(b*c)` | `RU(a*c)` |
 | M | M | `min(RD(a*d), RD(b*c))` | `max(RU(a*c), RU(b*d))` |
 
-Zero を先に処理することで `0 * Infinity` を endpoint primitive へ渡さない。
+Zeroを先に処理し、`0 * Infinity`をendpoint primitiveへ渡さない。
 
-この表は Phase 1 と Phase 3 で共通の意味論とする。
+### 11.5 除算: denominatorが0を含まない場合
 
-### 9.5 除算: denominator が 0 を含まない場合
+`A=[a,b]`、`B=[c,d]`とする。
 
-`A = [a, b]`, `B = [c, d]` とし、0 が B に含まれないものとする。
-
-#### B が正
-
-```text
-0 < c <= d
-```
+Bが正、`0 < c <= d`:
 
 | A | Lower | Upper |
 |---|---|---|
@@ -895,11 +925,7 @@ Zero を先に処理することで `0 * Infinity` を endpoint primitive へ渡
 | N | `RD(a/c)` | `RU(b/d)` |
 | M | `RD(a/c)` | `RU(b/c)` |
 
-#### B が負
-
-```text
-c <= d < 0
-```
+Bが負、`c <= d < 0`:
 
 | A | Lower | Upper |
 |---|---|---|
@@ -907,23 +933,17 @@ c <= d < 0
 | N | `RD(b/c)` | `RU(a/d)` |
 | M | `RD(b/d)` | `RU(a/d)` |
 
-reciprocal interval を一度作って乗算する方式は採用しない。二段階の外向き丸めで不要に幅が増える可能性があるため、端点を直接除算する。
+reciprocal intervalを一度作って乗算せず、端点を直接除算する。
 
-### 9.6 除算: denominator が 0 のみ
-
-```text
-B = [0, 0]
-```
-
-結果は numerator に関係なく Empty とする。
+### 11.6 denominatorが`[0,0]`
 
 ```text
-A / [0, 0] -> Empty
+A / [0,0] -> Empty
 ```
 
-### 9.7 除算: denominator が 0 に片側から接する場合
+### 11.7 denominatorが0に片側から接する場合
 
-#### B = [0, d], d > 0
+`B=[0,d]`, `d>0`:
 
 | A | Result |
 |---|---|
@@ -932,7 +952,7 @@ A / [0, 0] -> Empty
 | N | `[-Infinity, RU(b/d)]` |
 | M | `Entire` |
 
-#### B = [c, 0], c < 0
+`B=[c,0]`, `c<0`:
 
 | A | Result |
 |---|---|
@@ -941,267 +961,490 @@ A / [0, 0] -> Empty
 | N | `[RD(b/c), +Infinity]` |
 | M | `Entire` |
 
-P または N に zero endpoint が含まれる場合も表の式を使用する。zero endpoint は canonical zero へ正規化する。
-
-### 9.8 除算: denominator が 0 を跨ぐ場合
+### 11.8 denominatorが0を跨ぐ場合
 
 ```text
 c < 0 < d
-```
-
-```text
 Zero / B -> Zero
 その他    -> Entire
 ```
 
-nonzero numerator の実際の結果集合は 2 本の非連続な半直線になる場合がある。bare `Interval` は単一区間であるため、convex hull として Entire を返す。
+nonzero numeratorの結果集合は非連続になり得るため、bare `Interval`ではconvex hullとしてEntireを返す。2区間を返すextended divisionはPhase 4の別APIとする。
 
-2 区間を返す extended division は Phase 4 の別 API とする。
+## 12. 等値性、Hash、正規化
 
-## 10. 等値性と Hash
+### 12.1 等値性
 
-### 10.1 等値性
+- Empty同士は等しい。
+- 非空区間はcanonical Lower / Upperが等しい場合に等しい。
+- 入力時の`+0.0`と`-0.0`の差は等値性へ影響しない。
+- NaIはbare `Interval`に存在しない。
 
-集合として等しい区間を等しいとする。
+### 12.2 Hash
 
-- Empty 同士は等しい。
-- 非空区間は正規化済み Lower / Upper が等しい場合に等しい。
-- `+0.0` と `-0.0` の入力差は等値性へ影響しない。
-- NaI は bare `Interval` に存在しない。
+- Emptyは固定Hashとする。
+- zero endpointはcanonical bit patternでHashする。
+- NaN payloadをHashへ直接使用しない。
 
-### 10.2 Hash
+### 12.3 順序比較
 
-等しい区間は同じ Hash を返す。
+`<`, `<=`, `>`, `>=`はPhase 1で定義しない。subset、precedes、element-wise orderは別概念である。
 
-- Empty は固定 Hash とする。
-- zero endpoint は canonical bit pattern で Hash する。
-- NaN payload を Hash へ直接使用しない。
+## 13. Oracleと参照harness
 
-### 10.3 順序比較
+### 13.1 責務の優先順位
 
-`<`, `<=`, `>`, `>=` は Phase 1 では定義しない。
+結果判定の優先順位を次で固定する。
 
-区間には要素ごとの順序、strictly-before、subset 等の異なる関係があるため、通常数値の比較演算子へ割り当てない。
+1. **Exact rational oracle**: 数学的なprimary oracle
+2. **IEEE 1788.1 Phase 1 conformance matrix**: 区間演算の要求意味論
+3. **inari adapter**: set-based interval semanticsとendpoint differential oracle
+4. **kv adapter**: 互換な有限endpointに対するdirected-rounding primitive oracle
 
-## 11. 正規化
+既存libraryの結果がexact rational oracleと矛盾する場合、既存libraryへ無条件に合わせない。入力意味論、標準適合範囲、adapter、既存libraryの実装を調査する。
 
-### 11.1 constructor 入力
+### 13.2 Exact rational oracle
 
-入力が zero の場合、外部 lower/upper の符号に関係なく次へ正規化する。
-
-```text
-lower zero -> -0.0
-upper zero -> +0.0
-```
-
-内部では次になる。
-
-```text
-_negatedLower = +0.0
-_upper        = +0.0
-```
-
-### 11.2 演算結果
-
-raw result を生成する直前に同じ zero normalization を行う。
-
-### 11.3 infinity
-
-```text
-lower = -Infinity -> _negatedLower = +Infinity
-upper = +Infinity -> _upper = +Infinity
-```
-
-内部 lane に `-Infinity` を正規表現として保存しない。
-
-## 12. TDD と検証
-
-### 12.1 実装順序
-
-Phase 1 は次の順で進める。
-
-1. constructor / constants の失敗テスト
-2. constructor / constants の実装
-3. equality / zero normalization の失敗テスト
-4. equality / zero normalization の実装
-5. DirectedRounding 加算の失敗テスト
-6. 加算・減算の実装
-7. DirectedRounding 乗算の失敗テスト
-8. 乗算の実装
-9. DirectedRounding 除算の失敗テスト
-10. 除算の実装
-11. edge case と reference comparison の拡充
-
-各論理単位を小さく commit / push する。
-
-### 12.2 deterministic test
-
-最低限次を含める。
-
-#### construction
-
-- finite singleton
-- bounded interval
-- lower `-Infinity`
-- upper `+Infinity`
-- Entire
-- Empty
-- lower > upper
-- NaN endpoint
-- lower `+Infinity`
-- upper `-Infinity`
-- signed zero normalization
-- `default(Interval) == Interval.Zero`
-
-#### arithmetic
-
-- exact result
-- inexact result
-- positive / negative / mixed の全組合せ
-- Empty propagation
-- Entire との演算
-- zero interval
-- unbounded endpoint
-- denominator の zero 非包含、片側接触、zero 跨ぎ、zero のみ
-
-#### floating-point edge
-
-- `double.Epsilon`
-- 最大 subnormal
-- 最小 normal
-- `double.MaxValue`
-- overflow の直前と直後
-- cancellation
-- 隣接 double
-- `+0.0` / `-0.0`
-
-### 12.3 independent exact oracle
-
-production と同じ TwoSum / FMA algorithm だけを expected value の根拠にしない。
-
-テスト専用に binary64 を exact rational として扱う oracle を作る。
-
-有限 `double` は bit decomposition により次で正確に表現できる。
+テスト専用に有限binary64をexact rationalへ分解する。
 
 ```text
 significand * 2^exponent
 ```
 
-加算・減算・乗算は `BigInteger` で exact value を生成する。除算は numerator / denominator の rational として保持する。
+- 加算、減算、乗算は`BigInteger`でexact valueを生成する。
+- 除算は分子・分母のrationalとして保持する。
+- BCL nearest resultをexact rationalへ変換し、真値との大小でUp/Down補正を決める。
+- production projectへ`BigInteger` oracleを含めない。
 
-expected directed result の求め方:
+### 13.3 inari adapter
 
-1. BCL の nearest result `r` を取得する。
-2. `r` 自体を exact rational へ変換する。
-3. exact result と `r` を比較する。
-4. 上向きで `r` が小さい場合だけ `BitIncrement(r)` する。
-5. 下向きで `r` が大きい場合だけ `BitDecrement(r)` する。
-6. overflow / infinity は exact rational と最大有限値を比較して決める。
+固定参照:
 
-この oracle は test project にのみ置き、production package には含めない。
+```text
+Repository: unageek/inari
+Commit:     18b83a571d7681c76067bc38d90a74e8be29f545
+```
 
-### 12.4 reference implementation comparison
+Rustのtest-only CLI adapterを`tools/reference-oracles/inari-adapter/`へ置く。
 
-次を secondary oracle とする。
+- stdin: JSON Lines
+- stdout: JSON Lines
+- 入力: operationとoperand endpoint bit pattern
+- 出力: state、lower bits、upper bits、error
+- EmptyのNaN payloadは比較しない。
+- signed zeroはDevo6.Intervalのcanonical ruleへ変換して比較する。
 
-- `inari` の pinned commit
-- `kv` の pinned commit
+inariは、Empty / Entire、zero-crossing division、set-based arithmetic、tight endpointのsecondary oracleとする。
 
-比較単位:
+### 13.4 kv adapter
 
-- Empty / Entire の意味
-- endpoint の bit pattern
-- zero sign は Devo6.Interval の canonical rule 適用後に比較
-- NaN payload は比較しない
+固定参照:
 
-不一致時は、Devo6.Interval、exact rational oracle、`inari`、`kv` の全結果をログへ保存する。
+```text
+Repository: mskashi/kv
+Commit:     c7f8f2324a0e403cca6b39f46088a22843d440db
+File:       kv/rdouble-nohwround.hpp
+```
 
-### 12.5 property test
+C++のtest-only CLI adapterを`tools/reference-oracles/kv-adapter/`へ置く。
+
+比較対象:
+
+- `add_up` / `add_down`
+- `mul_up` / `mul_down`
+- `div_up` / `div_down`
+- primitive前提条件を満たす有限または明示的に互換な特殊operand
+
+kvの通常`interval`除算はdenominatorが0を含む場合にDevo6.Interval / inariのset-based semanticsと互換でないため、その区間演算結果をoracleにしない。該当caseは`expected-difference: kv-zero-containing-denominator`として記録し、kv adapterを実行しない。
+
+### 13.5 reference lock
+
+`tests/ReferenceData/reference-lock.json`に次を保存する。
+
+- inari commit SHA
+- kv commit SHA
+- ITF1788 commit SHA
+- adapter source hash
+- generator source hash
+- Rust toolchain version
+- C++ compilerおよびversion
+- target triple
+- generator command
+- output corpus SHA-256
+- source license / notice path
+
+reference更新は専用PRで行い、lockとgenerated corpusの差分を同時にreviewする。
+
+### 13.6 corpus形式
+
+JSON Linesを使用し、数値はdecimal文字列ではなく16桁hexのbinary64 bit patternで保持する。
+
+```json
+{"schema":1,"caseId":"mul-scaled-t-lt-s","kind":"rounding","operation":"mulUp","xBits":"216b5087a9deee3d","yBits":"1e04591a0fee6d8d","expectedBits":"...","source":"exact-rational"}
+{"schema":1,"caseId":"div-cross-zero","kind":"interval","operation":"div","left":{"lowerBits":"3ff0000000000000","upperBits":"4000000000000000"},"right":{"lowerBits":"bff0000000000000","upperBits":"3ff0000000000000"},"expected":{"state":"entire"},"source":"ieee1788-matrix"}
+```
+
+実際のcorpusでは次を必須fieldとする。
+
+- schema
+- caseId
+- operation
+- operand bit patternsまたはstate
+- expected state / endpoint bits
+- source
+- source revision
+- applicability
+- expected-difference reason
+
+caseは`caseId`でsortし、generatorの実行順やdictionary順に依存させない。
+
+### 13.7 実行方式
+
+通常CIはrepositoryへcommitされたgolden corpusをC# testから読み込む。毎回Rust/C++ toolchainをproduction test jobへ導入しない。
+
+reference-integrity jobは次を行う。
+
+1. `reference-lock.json`の固定SHAをcheckoutする。
+2. adapterを固定toolchainでbuildする。
+3. generator inputを各adapterへ渡す。
+4. JSONLをcanonicalizeして再生成する。
+5. commit済みcorpusとbyte-for-byte比較する。
+6. 差分、adapter stdout/stderr、toolchain情報をartifactへ保存する。
+
+## 14. IEEE 1788.1 conformance strategy
+
+### 14.1 基準
+
+意味論の基準は基本設計どおりIEEE 1788.1-2017とする。外部ITF1788 corpusは補助的な入力源であり、標準そのものの代替ではない。
+
+ITF1788固定参照:
+
+```text
+Repository: unageek/ITF1788
+Commit:     d8c2a64478ebdc9cbde6ccef33eaad3bed60ed81
+```
+
+inariがsubmoduleとして固定する同じSHAを使用する。
+
+### 14.2 Phase 1適用matrix
+
+| IEEE operation concept | Devo6.Interval API | Phase 1 |
+|---|---|---|
+| `empty` | `Interval.Empty` | required |
+| `entire` | `Interval.Entire` | required |
+| numeric `numsToInterval` | constructor / `TryCreate` | required |
+| `inf` | `Lower` | required |
+| `sup` | `Upper` | required |
+| `isEmpty` | `IsEmpty` | required |
+| `isEntire` | `IsEntire` | required |
+| `isSingleton` | `IsSingleton` | required |
+| `equal` | `Equals`, `==` | required |
+| `neg` | unary `-` | required |
+| `add` | binary `+` | required |
+| `sub` | binary `-` | required |
+| `mul` | binary `*` | required |
+| `div` | binary `/` | required |
+
+### 14.3 Phase 4へ延期する項目
+
+- text constructor / exact text I/O
+- reciprocal、square、sqrt、fma、power
+- transcendental functions
+- set operationsと各種relation
+- reduction
+- extended / two-output division
+- decorated interval / NaI / decoration propagation
+
+延期項目をPhase 1 conformance failureとして数えない。matrix上で`deferred-phase-4`と明示する。
+
+### 14.4 ITF1788入力
+
+Phase 1 generatorは固定SHAから次の互換caseを抽出・適応する。
+
+- `itl/ieee1788-constructors.itl`
+- `itl/libieeep1788_elem.itl`の`neg/add/sub/mul/div`
+- `itl/libieeep1788_bool.itl`の`equal/isEmpty/isEntire/isSingleton`
+- `itl/libieeep1788_num.itl`の`inf/sup`
+
+ITF1788がIEEE 1788-2015向けである点を考慮し、IEEE 1788.1と本基本設計に一致するcaseだけをPhase 1 required corpusへ採用する。除外caseはoperation、理由、source locationをmanifestへ残す。
+
+### 14.5 adaptation rules
+
+- lower zeroは`-0.0`、upper zeroは`+0.0`へcanonicalizeする。
+- EmptyのNaN payloadは比較しない。
+- decorated resultはPhase 1で読み込まない。
+- string parsingを必要とするcaseはPhase 4へ延期する。
+- constructor errorはC#の`ArgumentException`または`TryCreate=false`へ対応付ける。
+- interval resultはstateとcanonical endpoint bit patternで比較する。
+
+### 14.6 conformance evidence
+
+各architecture jobは次を生成する。
+
+- `conformance-summary.json`
+- passed / failed / deferred / excluded件数
+- failed caseのsource revisionとcaseId
+- actual / expected endpoint bits
+- adaptation rule
+
+これらを`if: always()`でartifactへ保存する。
+
+## 15. 決定的テストfixture
+
+random/property testとは別に、以下を固定caseとして実装する。
+
+### 15.1 閾値の直前・一致・直後
+
+```text
+2^-969 previous = bits 0x035fffffffffffff
+2^-969          = bits 0x0360000000000000
+2^-969 next     = bits 0x0360000000000001
+
+2^918 previous  = bits 0x794fffffffffffff
+2^918           = bits 0x7950000000000000
+2^918 next      = bits 0x7950000000000001
+
+2^-1074         = bits 0x0000000000000001
+```
+
+`x=1.0`との乗算、および正負符号を反転したcaseで、`2^-969`のbelow/equal/aboveがscaled/normalの期待経路へ入ることを確認する。
+
+除算では`abs(xn)`のbelow/equal/aboveと、`abs(yn)`のbelow/equal/aboveを直積で組み合わせる。`2^918`の一致はlarge-denominator early-return側であることを固定する。
+
+### 15.2 large-denominator early return
+
+`xBits=0x035fffffffffffff`、`yBits=0x7950000000000000`を基準に正負を作る。
+
+| Exact quotient sign | Direction | Expected primitive result |
+|---|---|---|
+| positive | Up | `+2^-1074` |
+| positive | Down | `+0.0` |
+| negative | Up | `+0.0` |
+| negative | Down | `-2^-1074` |
+
+`yBits=0x794fffffffffffff`ではscale継続側へ入り、`yBits=0x7950000000000001`ではearly-return側へ入ることを確認する。
+
+### 15.3 乗算scaled比較
+
+次の固定binary64 operandをcorpusへ保存する。
+
+| Case | xBits | yBits | Required branch |
+|---|---|---|---|
+| `mul-scaled-t-lt-s` | `216b5087a9deee3d` | `1e04591a0fee6d8d` | `t < s`; UpのみNextUp |
+| `mul-scaled-t-gt-s` | `8b8ab461601ec773` | `33c03ee4daaa7148` | `t > s`; DownのみNextDown |
+| `mul-scaled-eq-pos-residual` | `b8aefe57fced900a` | `88b7778db0690811` | `t == s && s2 > 0`; UpのみNextUp |
+| `mul-scaled-eq-neg-residual` | `b2e664c6cc3b90be` | `8e6b00818bab3ede` | `t == s && s2 < 0`; DownのみNextDown |
+| `mul-scaled-exact` | `3ff0000000000000` | `0000000000000001` | `t == s && s2 == 0`; 補正なし |
+
+expected endpoint bitsはexact rational oracleで生成し、表のbranch assertionと結果assertionを両方行う。production methodをpublicにしないため、branch coverageはinternal test hookまたはcoverage instrumentationで確認する。
+
+### 15.4 除算rounded-product tie
+
+次の固定caseで、rounded high productがnumeratorと等しくてもresidualで補正が変わることを確認する。
+
+| Case | xBits | yBits | qBits | Relation after denominator normalization | Expected correction |
+|---|---|---|---|---|---|
+| `div-tie-positive-residual` | `35b62b4b61f6a01a` | `6a4b103b1dfd16c0` | `0b5a36846200f80c` | `r == xn && r2 > 0` | DownのみNextDown |
+| `div-tie-negative-residual` | `0e0db74836096727` | `a9ad3e48c2f627a6` | `a4504233b80eaec4` | `r == xn && r2 < 0` | UpのみNextUp |
+
+さらに`r < xn`、`r > xn`、`r == xn && r2 == 0`を各1case固定する。
+
+### 15.5 overflow
+
+最低限次を方向別に固定する。
+
+```text
++double.MaxValue * 2:
+  Up   -> +Infinity
+  Down -> +double.MaxValue
+
+-double.MaxValue * 2:
+  Up   -> -double.MaxValue
+  Down -> -Infinity
+
++double.MaxValue / 2^-1074:
+  Up   -> +Infinity
+  Down -> +double.MaxValue
+
+-double.MaxValue / 2^-1074:
+  Up   -> -double.MaxValue
+  Down -> -Infinity
+```
+
+Infinity operandによるexact Infinityと、finite operandによるoverflowを別caseで確認する。
+
+### 15.6 exact result
+
+2の整数乗同士、`1*2^-1074`、`1/2`等について、residualが0で不要な`NextUp` / `NextDown`を行わないことを固定する。
+
+## 16. Property testとcross-backend test
+
+### 16.1 property test
 
 ランダムな有効区間に対して次を検証する。
 
-- result が exact sampled value を包含する。
+- resultがexact sampled valueを包含する。
 - `x + y == y + x`
 - `x * y == y * x`
 - `-(-x) == x`
 - `x + Zero == x`
-- `x * Zero == Zero` for nonempty x
-- scalar backend の result invariant が保たれる。
+- nonempty `x`について`x * Zero == Zero`
+- resultの内部不変条件が保たれる。
 
-分配法則の等号は依存性問題により一般には成立しないため、同一結果を要求しない。
+分配法則の等号は依存性問題により一般には要求しない。
 
-### 12.6 cross-backend differential test
+### 16.2 Phase 3 differential test
 
-Phase 3 では同じ入力集合を scalar backend と SIMD backend の両方へ入力し、次を要求する。
+同じ入力をscalarと各SIMD backendへ渡し、次を要求する。
 
-- Empty / Entire が一致する。
-- nonempty endpoint の canonical bit pattern が一致する。
-- CPU 非対応時は scalar fallback と一致する。
+- Empty / Entire stateが一致する。
+- nonempty canonical endpoint bit patternが一致する。
+- CPU非対応時はscalar fallbackと一致する。
+- scalarより広いが包含しているだけのSIMD結果は不合格とする。
 
-単に SIMD result が scalar result を包含しているだけでは合格としない。四則演算については bitwise-equivalent endpoint を目標とする。
+## 17. CIとfailure diagnostics
 
-## 13. CI と failure diagnostics
+Phase 1で最初のexecutable projectとtest projectを追加するPRに、同時にCI workflowを追加する。
 
-Phase 1 で初めて executable project と test project を追加するとき、同じ PR で CI workflow を追加する。
+### 17.1 architecture matrix
 
-CI は少なくとも次を保存する。
+同じcommit、同じtest assembly、同じreference corpusを次で実行する。
 
-- test result (`.trx` 等)
-- 標準出力
-- 標準エラー
-- test runner log
-- 失敗した reference comparison の入力と全 backend result
+```yaml
+strategy:
+  matrix:
+    include:
+      - architecture: x64
+        runs-on: ubuntu-24.04
+      - architecture: arm64
+        runs-on: ubuntu-24.04-arm
+```
 
-artifact upload step はテスト失敗時にも実行されるよう `if: always()` 相当を使用する。
+runner labelが将来変更された場合は同等のLinux x64 / Linux ARM64 runnerへ置換できるが、両architectureで同一suiteを実行するgate自体は省略しない。
 
-本書自体は documentation-only であり、現在のリポジトリには executable target と workflow がないため、本作業では workflow を追加しない。
+### 17.2 各architectureの実行内容
 
-## 14. API 確定ゲート
+- deterministic unit tests
+- directed-rounding boundary fixtures
+- exact rational oracle tests
+- IEEE 1788.1 Phase 1 conformance tests
+- committed golden corpus comparison
+- property tests with fixed seed
+- canonical result corpus生成
 
-Phase 2 は「コードが動いた」だけでは完了としない。次を満たす必要がある。
+### 17.3 architecture間比較
 
-### 14.1 利用性
+各jobはcaseId順にsortした`canonical-results.jsonl`を生成する。このfileには結果bit patternだけを含め、runtime metadataは別fileにする。
 
-- 代表的な計算例を operator だけで記述できる。
-- Empty / Entire を明示的に判定できる。
-- 不正 constructor と数学的に空になる演算結果の違いが明確である。
-- signed zero が利用者に予期しない分岐を生じさせない。
+後続jobはx64 / ARM64の`canonical-results.jsonl`をbyte-for-byte比較し、SHA-256も記録する。不一致時は最初の差分だけで打ち切らず、全caseId差分をartifactへ保存する。
 
-### 14.2 正確性
+### 17.4 failure artifact
 
-- 四則演算の edge-case matrix が通る。
-- exact rational oracle との差がない。
-- `inari` / `kv` との差異が説明済みである。
-- x64 と ARM64 scalar backend で同じ canonical result を返す。
+各architecture jobは成功・失敗に関係なく`if: always()`で少なくとも次を保存する。
 
-### 14.3 API baseline
+- `.trx`等のtest result
+- test runner標準出力
+- test runner標準エラー
+- diagnostic verbosity log
+- runtime / OS / architecture / CPU feature情報
+- reference-lock snapshot
+- conformance summary
+- canonical result corpus
+- mismatch case input
+- exact rational result
+- Devo6.Interval result
+- inari resultまたは`not-applicable`
+- kv primitive resultまたは`not-applicable`
+- expected-difference reason
 
-- public API 一覧を baseline file として保存する。
-- 以後の PR で public API の差分を CI 検出する。
-- breaking change が必要な場合は `doc/Design/BreakingChanges.md` に理由と移行方法を記録する。
+### 17.5 exact-head CI
 
-### 14.4 性能 baseline
+PRのCI確認は、確認時点のPR current HEAD SHAとworkflow runの`head_sha`が一致するrunだけを対象とする。HEAD更新後は新HEADのrunを確認する。一致するrunがない場合はCI未実施とし、別SHAのrunを代用しない。
 
-- allocation が 0 である。
-- scalar operation の BenchmarkDotNet baseline を保存する。
-- Debug 用 assertion が Release hot path に残らない。
+本PRはdocumentation-onlyであり、現時点のrepositoryにはexecutable targetとworkflowがないため、本設計変更ではworkflowを追加しない。
 
-性能値そのものを API 確定条件にはしない。Phase 3 の比較基準として保存する。
+## 18. API確定ゲート
 
-## 15. SIMD 詳細方針
+### 18.1 利用性
 
-### 15.1 public API 非依存
+- 代表的な計算例をoperatorで記述できる。
+- Empty / Entireを明示的に判定できる。
+- 不正constructorと数学的にEmptyになる演算を区別できる。
+- signed zeroが予期しない分岐を生じさせない。
 
-既存 scalar operator の署名と結果を変更しない。
+### 18.2 正確性
 
-SIMD は以下のいずれかとして追加する。
+- §15の全fixtureが成功する。
+- exact rational oracleとの差がない。
+- Phase 1 conformance matrixが全件passする。
+- inariとの差異が0件、または各差異が承認済みである。
+- kv primitiveとの互換対象差異が0件、または各差異が承認済みである。
+- Linux x64 / Linux ARM64のcanonical result corpusが一致する。
 
-- operator の内部 backend 差し替え
-- 追加の batch API
+### 18.3 API baseline
 
-### 15.2 batch API 候補
+- public API一覧をbaseline fileとして保存する。
+- 以後のPRでpublic API差分をCI検出する。
+- breaking changeは`doc/Design/BreakingChanges.md`へ理由と移行方法を記録する。
 
-Phase 3 で次を別途 API review する。
+### 18.4 性能baseline
+
+- 基本演算がheap allocationを発生させない。
+- scalar operationのBenchmarkDotNet baselineを保存する。
+- Debug assertionがRelease hot pathに残らない。
+
+性能値自体はAPI確定のcorrectness gateにはしない。
+
+## 19. SIMD capabilityとdispatch
+
+### 19.1 capabilityは独立判定する
+
+x86 FMAをAVX2またはSSE2の付随機能として扱わない。少なくとも次を個別に判定する。
+
+```text
+Avx512F.IsSupported
+Avx2.IsSupported
+Avx.IsSupported
+Fma.IsSupported
+Sse2.IsSupported
+AdvSimd.Arm64.IsSupported
+```
+
+backendは型名ではなく、operationごとの利用可能kernelとして選ぶ。
+
+### 19.2 capability matrix
+
+| Environment | Add/Sub | Mul/Div | Initial production policy |
+|---|---|---|---|
+| x64 AVX-512F | packed embedded rounding | packed embedded rounding | 4区間batch候補 |
+| x64 AVX2 + FMA | vector TwoSum候補 | vector FMA residual候補 | correctness/benchmark通過後に採用 |
+| x64 AVX2 without FMA | vector TwoSum候補 | scalar fallback | mul/divのvector Dekkerは別評価 |
+| x64 AVX + FMA without AVX2 | vector TwoSum候補 | vector FMA residual候補、bit correctionは制約あり | benchmark後に採否決定 |
+| x64 SSE2 without FMA | Vector128 TwoSum候補 | scalar fallback | add/subのみ候補 |
+| ARM64 AdvSimd | vector TwoSum候補 | fused residualのexactness確認まではscalar fallback | 個別差分試験後に採用 |
+| その他 | scalar | scalar | 常時利用可能 |
+
+AVX2 without FMAおよびSSE2では、Phase 3初期実装のmul/divをscalar fallbackとする。vectorized TwoProduct/Dekkerは、正確性証明とbenchmarkで有効性が確認できた後の追加候補とする。
+
+ARM64のfused multiply-add/subtract intrinsicはx86の`Fma.IsSupported`とは別経路である。`AdvSimd.Arm64.IsSupported`と実際に使用するintrinsicを個別にgateし、scalar referenceとのbitwise differential testを通過するまでmul/div production dispatchへ入れない。
+
+### 19.3 AVX-512 batch layout
+
+4区間を1個の`Vector512<double>`へ配置する。
+
+```text
+[-L0,U0,-L1,U1,-L2,U2,-L3,U3]
+```
+
+加算:
+
+```text
+result = Add(left, right, ToPositiveInfinity)
+```
+
+結果はそのまま4個の内部区間表現になる。末尾が4区間未満の場合はscalarで処理する。
+
+### 19.4 batch API候補
 
 ```csharp
 public static class IntervalBatch
@@ -1228,69 +1471,55 @@ public static class IntervalBatch
 }
 ```
 
-これは Phase 2 の基本 `Interval` API freeze とは別の additive API である。
+これはPhase 2の基本`Interval` API freezeとは別のadditive APIである。長さ不一致、overlap、in-place可否はPhase 3開始時のAPI reviewで確定する。
 
-長さ不一致、overlap、in-place 可否は Phase 3 の詳細設計で確定する。
+### 19.5 dispatch順序
 
-### 15.3 AVX-512
-
-AVX-512 backend は 4 区間を `Vector512<double>` の 8 lane に配置する。
-
-加算の概念:
+概念上のx64 dispatch:
 
 ```text
-left   = [-L0,U0,-L1,U1,-L2,U2,-L3,U3]
-right  = [-R0,V0,-R1,V1,-R2,V2,-R3,V3]
-result = Add(left, right, ToPositiveInfinity)
+AVX-512F exact packed kernel
+  -> AVX2 + FMA exact kernel
+  -> AVX2 add/sub-only kernel + scalar mul/div
+  -> AVX + FMA exact candidate
+  -> SSE2 add/sub-only kernel + scalar mul/div
+  -> scalar
 ```
 
-結果はそのまま 4 個の内部区間表現となる。
+ARM64はAdvSimd kernelまたはscalarを選ぶ。利用者へbackend選択optionを最初から公開しない。test / benchmarkだけがinternal hookでbackendを固定できるようにする。
 
-末尾が 4 区間未満の場合は scalar backend で処理する。
+### 19.6 SIMD完了条件
 
-### 15.4 AVX2 / SSE2 / ARM64
+- scalar backendとcanonical bitwise equivalent
+- 非対応CPUでscalar fallback
+- Empty、zero、Infinity、subnormalを含む差分試験成功
+- 各capability組合せを強制したtest成功
+- 単一区間またはbatchで測定可能な性能改善
+- 性能改善のない経路をproduction dispatchへ含めない
 
-embedded rounding を使用できない backend では、グローバル floating-point rounding mode を変更しない。
+## 20. Native backendの判断
 
-候補:
+Phase 1、Phase 2およびPhase 3の初期production implementationはmanaged-onlyとする。scalar operatorごとのP/Invokeは採用しない。
 
-- vectorized TwoSum
-- vectorized FMA residual
-- residual sign による lane-wise next-up correction
+native backendの選択肢自体は破棄せず、次のdecision gateへ延期する。
 
-MXCSR を native shim で変更する方式は、JIT の floating-point 最適化、例外時復元、thread-local state、async/thread migration の検証が必要であるため、初期 SIMD backend の対象外とする。
+1. Phase 3完了後のlarge-batch benchmark
+2. Phase 4で超越関数の正しいmanaged実装方式を決める時点
 
-### 15.5 backend 選択
+採用条件:
 
-利用者へ backend 選択 option を最初から公開しない。
+- managed実装では利用できない方向付き丸めまたは数学関数能力が必要
+- interop、copy、dispatchを含めても実利用workloadで有意な改善がある
+- scalar referenceと同じset semanticsとcanonical endpointを返す
+- x64 / ARM64 / deployment targetの配布方法を維持できる
+- ABI、例外、thread safety、NativeAOT、trimmingへの影響を受容できる
+- license / third-party noticeを満たす
 
-production は CPU support に基づき自動選択する。テストと benchmark だけが internal hook で backend を固定できるようにする。
+nativeを採用する場合も公開`Interval`型は変更せず、large batchまたは重い初等関数の内部backendに限定する。判定結果はdesign updateとbenchmark reportに残す。
 
-### 15.6 SIMD 完了条件
+## 21. 四則演算以外の設計原則
 
-- scalar backend と bitwise equivalent
-- 非対応 CPU で scalar fallback
-- Empty / zero / infinity / subnormal を含む差分試験成功
-- 単一演算または batch のいずれかで測定可能な性能改善
-- 性能改善がない経路は production dispatch に含めない
-
-## 16. 四則演算以外の設計原則
-
-### 16.1 追加順序
-
-API が単純で正確性を証明しやすいものから追加する。
-
-```text
-set operations
-  -> monotonic algebraic functions
-  -> monotonic transcendental functions
-  -> periodic / singular functions
-  -> decorated / parsing / advanced models
-```
-
-### 16.2 IntervalMath
-
-四則演算以外の数学関数は `Interval` の instance method ではなく、次の static class を第一候補とする。
+四則演算以外は`IntervalMath`を第一候補とする。
 
 ```csharp
 public static class IntervalMath
@@ -1302,123 +1531,135 @@ public static class IntervalMath
 }
 ```
 
-これにより値型自体の責務を抑え、関数追加を additive change にできる。
-
-### 16.3 定義域
-
-bare interval は関数の定義域と入力区間の共通部分を評価する。
-
-例:
+bare intervalは関数定義域との共通部分を評価する。
 
 ```text
-Sqrt([-1, 4]) -> [0, 2]
-Sqrt([-4, -1]) -> Empty
+Sqrt([-1,4])  -> [0,2]
+Sqrt([-4,-1]) -> Empty
 ```
 
-定義域の一部が欠けた情報は bare interval だけでは保持しない。将来 decorated interval で decoration を付加する。
+定義域の一部が欠けた事実は、将来decorated intervalで表現する。
 
-## 17. 性能設計
+## 22. 性能、thread safety、AOT
 
-Phase 1 から次を守る。
+Phase 1から次を守る。
 
 - `readonly struct`
-- heap allocation なし
-- global rounding mode 変更なし
-- production の `BigInteger` 利用なし
-- hot path の virtual/interface/delegate dispatch なし
-- 無条件 1 ULP 拡張なし
-- reciprocal を経由した二重丸めなし
-- internal raw constructor による validation 重複回避
+- heap allocationなし
+- global rounding mode変更なし
+- productionの`BigInteger`利用なし
+- hot pathのvirtual/interface/delegate dispatchなし
+- 無条件1 ULP拡張なし
+- reciprocalを経由した二重丸めなし
+- internal raw constructorによるvalidation重複回避
 
-`MethodImplOptions.AggressiveInlining` は benchmark で有効性を確認した method に限定する。
+`Interval`はimmutable value typeとする。reflection、runtime code generation、dynamic assembly、native resolverをPhase 1で使用しない。NativeAOTとtrimmingを妨げない構造とする。
 
-## 18. Thread safety / AOT / trimming
+## 23. 「同等の計算結果」の定義
 
-`Interval` は immutable value type とする。
+四則演算では次を要求する。
 
-Phase 1 の方向付き丸めは process/thread の floating-point environment を変更しないため、複数 thread から安全に使用できる。
+1. IEEE 1788.1-oriented set-based resultを使用する。
+2. 単一区間で表せない場合はconvex hullを返す。
+3. 各有限端点を指定方向へ正しく丸めた最も内側のbinary64とする。
+4. signed zeroをDevo6.Intervalのcanonical ruleへ正規化する。
+5. EmptyのNaN payloadを比較対象外とする。
 
-reflection、runtime code generation、dynamic assembly、native resolver を使用しない。NativeAOT と trimming を妨げない構造とする。
+この条件を満たす場合、nonempty endpointは原則として一意である。inari / kvとの差異よりexact rational oracleと採用した区間意味論を優先する。
 
-## 19. 「同等の計算結果」の定義
+## 24. 参照実装移植とlicense
 
-既存ライブラリと同等であることを、単に「真値を含む」こととは定義しない。
+`kv`または`inari`のコードを翻案・移植する場合:
 
-四則演算では次を目標とする。
+- 参照元commit SHAをsource commentへ記録する。
+- MIT Licenseのcopyrightとpermission noticeをthird-party noticeへ含める。
+- 参照元test caseを移植した場合も出典を記録する。
 
-1. IEEE 1788.1 の set-based な結果集合を使用する。
-2. その集合の convex hull を返す。
-3. 各有限端点を、指定方向へ正しく丸めた最も内側の binary64 とする。
-4. signed zero は Devo6.Interval の canonical rule に正規化する。
-5. Empty の NaN payload は比較対象外とする。
+ITF1788のtest dataやgeneratorを利用・再配布する場合は、そのlicenseとNOTICEをtest assetに付随させる。production packageに不要なexternal test toolを同梱しない。
 
-この条件を満たす場合、四則演算の nonempty endpoint は原則として一意であり、`kv` / `inari` と bitwise に一致することを期待できる。
+## 25. 未確定事項
 
-不一致がある場合は「既存ライブラリに合わせる」ことを先にせず、exact rational oracle と IEEE 1788.1 意味論を優先して原因を調査する。
+Phase 1開始を妨げない項目だけを残す。
 
-## 20. 未確定事項
-
-Phase 1 開始を妨げないが、Phase 2 または後続フェーズで決定する。
-
-- namespace を `Devo6.Numerics` で確定するか
-- `Interval(double, double)` と factory-only API のどちらを正式採用するか
-- scalar double overload / conversion
+- namespaceを`Devo6.Numerics`で確定するか
+- constructorとfactory-only APIのどちらを正式採用するか
+- scalar overload / conversion
 - generic math operator interface
-- `ToString` の正式 format
-- public batch API の名称と overlap 規則
-- `Vector128<double>` を物理フィールドとして保持するか
-- AVX2 / ARM64 SIMD backend の採否
+- `ToString`の正式format
+- public batch APIの名称とoverlap規則
+- `Vector128<double>`を物理fieldとして保持するか
+- AVX2 / ARM64 kernelのperformance採否
 - parsing / serialization format
-- decorated interval と extended division の公開時期
+- decorated intervalとextended divisionの公開時期
+- native backend decision gateの最終結果
 
-## 21. 参照
+方向付き丸めの分岐、閾値、tie条件、Phase 1 conformance範囲、x64 / ARM64 gateは未確定事項に含めない。
 
-### 21.1 基本設計
+## 26. 参照
+
+### 26.1 基本設計
 
 - `doc/Design/basic/IntervalArithmetic.md`
 
-### 21.2 inari
+### 26.2 inari
 
 - Repository: `unageek/inari`
 - Pinned commit: `18b83a571d7681c76067bc38d90a74e8be29f545`
-- 参照点:
-  - `[-Lower, Upper]` SIMD 表現
-  - Empty の NaN 表現
-  - bare / decorated interval の分離
-  - IEEE 1788.1-oriented semantics
 - License: MIT
 
-### 21.3 kv
+### 26.3 kv
 
 - Repository: `mskashi/kv`
 - Pinned commit: `c7f8f2324a0e403cca6b39f46088a22843d440db`
-- 参照点:
-  - TwoSum / TwoProduct
-  - hardware rounding を使わない方向付き丸め
-  - overflow / underflow / subnormal 処理
-  - AVX-512 embedded rounding
+- Reference file: `kv/rdouble-nohwround.hpp`
 - License: MIT
 
-### 21.4 .NET
+### 26.4 ITF1788
+
+- Repository: `unageek/ITF1788`
+- Pinned commit: `d8c2a64478ebdc9cbde6ccef33eaad3bed60ed81`
+- Usage: test-only conformance corpus source / generator
+
+### 26.5 .NET
 
 - .NET releases and support
-  - <https://learn.microsoft.com/dotnet/core/releases-and-support>
 - `Math.FusedMultiplyAdd`
-  - <https://learn.microsoft.com/dotnet/api/system.math.fusedmultiplyadd>
+- `Math.BitIncrement` / `Math.BitDecrement`
 - `Avx512F`
-  - <https://learn.microsoft.com/dotnet/api/system.runtime.intrinsics.x86.avx512f>
+- `Avx2`
+- `Avx`
+- `Fma`
+- `Sse2`
+- `AdvSimd.Arm64`
 
-## 22. 実装開始条件
+## 27. Review finding closure
 
-Phase 1 は本書が承認された後、次の単位で開始する。
+| Finding | Disposition | Design evidence |
+|---|---|---|
+| F-PR3-001 High | addressed | §9、§10でscaled比較、tie、large-denominator、overflow、閾値一致を確定 |
+| F-PR3-002 Medium | addressed | §3.2、§19でISA/FMAを独立判定しfallback matrixを定義 |
+| F-PR3-004 Medium | addressed | §14でpinned ITF1788、Phase 1 matrix、adaptation、artifactを定義 |
+| F-PR3-005 Medium | addressed | §13でoracle責務、adapter、lock、JSONL、kv非互換除外を定義 |
+| F-PR3-006 Medium | addressed | §17でLinux x64 / ARM64 matrixとarchitecture間corpus比較を定義 |
+| F-PR3-007 Medium | addressed | §15で閾値bit pattern、scaled4分岐、division tie、overflow fixtureを定義 |
+| F-PR3-008 Low | addressed | §20でmanaged-only範囲とnative再検討gateを定義 |
+| F-PR3-003 withdrawn | no implementation action | exhaustive reviewのerratumに従いactive findingから除外 |
 
-1. solution / project / CI 基盤
-2. `Interval` 生成・状態・正規化
-3. managed directed rounding
-4. 加算・減算
-5. 乗算
-6. 除算
-7. reference oracle / differential test
-8. sample / API 評価 report
+## 28. Phase 1実装開始条件
 
-各単位は TDD で実装し、レビュー可能な小さな commit とする。
+本書のfix verification完了後、次の単位でPhase 1を開始する。
+
+1. solution / project / x64・ARM64 CI・diagnostic artifact基盤
+2. `Interval`生成・状態・正規化
+3. exact rational oracleと固定boundary corpus
+4. managed directed roundingの加減算
+5. 区間加算・減算
+6. managed directed roundingの乗算
+7. 区間乗算
+8. managed directed roundingの除算
+9. 区間除算
+10. IEEE 1788.1 Phase 1 conformance harness
+11. inari / kv reference adapterとgolden corpus
+12. sample / API評価report
+
+各論理単位はTDDで、先に失敗testを追加し、失敗を確認してから実装する。変更はreview可能な小さなcommitとしてpushする。
