@@ -1,0 +1,145 @@
+schema_version: 3
+producer:
+  skill: chat-implementation-worker
+  mode: review_fix_implementation
+  generated_at: 2026-08-30T19:55:00+09:00
+
+repository: ssaattww/Devo6.Interval
+issue_or_pr: "PR #3"
+branch: docs/detailed-interval-arithmetic-design
+base_ref: main
+base_sha: ad5c058f8a4164b0c7d0763c65246914ea5d1c03
+
+target:
+  source_reviewed_technical_head: 8e6e7499204fccf0643da82f274d1485dc0e3272
+  source_review_artifact_head: a37fc5bcd43f1aab1221731a7c42dab5e3e93865
+  technical_fix_commit: 2fb636f9f5322f4918dfc10680c14ba59147a25e
+  report_commit: 1cf808f11082396871e75b749199e8c6ff064663
+  handoff_commit: commit_pending
+  final_pr_head: pending_after_this_commit
+  note: >-
+    This packet cannot contain its own future persistence commit SHA. The final PR HEAD
+    and exact-head workflow state are published in the PR body/comment after persistence.
+
+scope:
+  source_review: reports/2026-08-30-pr-3-additional-design-review.md
+  findings_addressed:
+    - id: F-PR3-010
+      severity: high
+      status: addressed_verification_pending
+      summary: >-
+        Defined IntervalUnion2 as a maximum-two-component tight closed-enclosure representation,
+        allowed zero-touch ordered component enclosures, prohibited touch-based merge, and added zero-touch fixtures.
+    - id: F-PR3-011
+      severity: high
+      status: addressed_verification_pending
+      summary: >-
+        Added the complete negative-x Atan2 branch-cut contact matrix and canonical signed-zero rule.
+    - id: F-PR3-012
+      severity: medium
+      status: addressed_verification_pending
+      summary: >-
+        Added positive-base Pow zero-boundary closure candidates and complete a==0 branching without calling 0^0 or 0^negative scalar kernels.
+    - id: F-PR3-013
+      severity: medium
+      status: addressed_verification_pending
+      summary: Restored one-sided-zero extended-division tables and hull-equivalence property.
+    - id: F-PR3-014
+      severity: medium
+      status: addressed_verification_pending
+      summary: Added the Empty/common/unbounded cancellative operation matrix.
+    - id: F-PR3-015
+      severity: medium
+      status: addressed_verification_pending
+      summary: Completed IntervalUnion2 and DecoratedInterval C# value equality, hashing, operators, and union indexer contract.
+    - id: F-PR3-016
+      severity: medium
+      status: addressed_verification_pending
+      summary: Added result-state decoration caps for Empty, unbounded, and bounded results through canonical decorated construction.
+    - id: F-PR3-017
+      severity: low
+      status: addressed_verification_pending
+      summary: Restored strict-less Empty truth table and BothEmpty overlap inverse.
+
+write_boundary:
+  allowed:
+    - doc/Design/detail/IntervalArithmetic.md
+    - reports/2026-08-30-pr-3-additional-design-review-follow-up.md
+    - reports/2026-08-30-pr-3-additional-design-review-follow-up-handoff.yaml
+    - PR #3 body
+    - PR #3 top-level summary comment
+  forbidden:
+    - src/**
+    - tests/**
+    - .github/workflows/**
+    - merge
+
+files:
+  changed:
+    - path: doc/Design/detail/IntervalArithmetic.md
+      commit: 2fb636f9f5322f4918dfc10680c14ba59147a25e
+      purpose: address F-PR3-010 through F-PR3-017 and bump sole normative design to version 5
+    - path: reports/2026-08-30-pr-3-additional-design-review-follow-up.md
+      commit: 1cf808f11082396871e75b749199e8c6ff064663
+      purpose: durable detailed fix report and consolidation-record correction
+    - path: reports/2026-08-30-pr-3-additional-design-review-follow-up-handoff.yaml
+      commit: commit_pending
+      purpose: schema-v3 continuation packet
+  intentionally_untouched:
+    - path_or_area: previous four-arithmetic design semantics
+      reason: previous findings were not reopened by the additional-scope review
+    - path_or_area: production source/tests/workflow
+      reason: documentation-only design fix
+
+validation:
+  documentation:
+    state: completed
+    evidence:
+      - Latest additional design review and detailed report were inspected.
+      - All eight active finding identities were mapped to normative design changes.
+      - Pinned inari two-output division and cancellative-operation behavior were rechecked.
+      - Consolidation-preservation claim was corrected rather than silently rewriting historical reports.
+  executable:
+    state: not_executed
+    reason: repository has no executable project or test target and the change is documentation-only
+  ci:
+    final_head_sha: pending_after_handoff_commit
+    matching_pull_request_runs: pending
+    execution_status: pending_exact_head_check
+    substituted_other_sha: false
+
+review:
+  previous_verdict: fail
+  previous_reviewed_head: 8e6e7499204fccf0643da82f274d1485dc0e3272
+  required_next_mode: fix_verification
+  required_finding_identities:
+    - F-PR3-010
+    - F-PR3-011
+    - F-PR3-012
+    - F-PR3-013
+    - F-PR3-014
+    - F-PR3-015
+    - F-PR3-016
+    - F-PR3-017
+  prior_four_arithmetic_findings_reopened: false
+  merge_allowed: false
+
+correction_record:
+  historical_reports_modified: false
+  corrected_claim: >-
+    The prior consolidation report/handoff stated that all normative Phase 4 content had been preserved.
+    The additional review found omissions. Design version 5 and the follow-up report supersede that preservation
+    claim for current authority while preserving the historical report unchanged.
+
+next_action:
+  type: fix_verification
+  target: PR #3 final current HEAD after this handoff commit
+  target_skill: chat-review-worker
+  instructions:
+    - Verify F-PR3-010 through F-PR3-017 by finding identity against the sole normative IntervalArithmetic.md.
+    - Do not reopen previously resolved four-arithmetic findings unless the fix directly regresses them.
+    - Check zero-touch union component semantics, negative-x Atan2 branch-cut containment, and Pow zero-boundary behavior with the required fixtures.
+    - Verify restored one-sided division and relation contracts against the pre-consolidation design and pinned inari where applicable.
+    - Verify value equality/hash and decoration state caps as public API contracts.
+    - Use only workflow runs whose head_sha exactly equals the current PR HEAD; if none exist report CI未実施.
+    - Do not merge.
