@@ -1,0 +1,201 @@
+schema_version: 3
+producer:
+  skill: chat-review-worker
+  mode: fix_verification
+  generated_at: 2026-08-30T20:24:00+09:00
+
+repository: ssaattww/Devo6.Interval
+issue_or_pr: "PR #3"
+branch: docs/detailed-interval-arithmetic-design
+base_ref: main
+base_sha: ad5c058f8a4164b0c7d0763c65246914ea5d1c03
+
+target:
+  source_reviewed_technical_head: 8e6e7499204fccf0643da82f274d1485dc0e3272
+  source_review_artifact_head: a37fc5bcd43f1aab1221731a7c42dab5e3e93865
+  technical_fix_commit: 2fb636f9f5322f4918dfc10680c14ba59147a25e
+  fix_review_start_head: b88aed05640dcf1fb00328aff7ba621ce9e0ccda
+  review_report_commit: 9fc5158fa8a527753bc095455a5bc12f5257d47e
+  review_handoff_commit: commit_pending
+  final_publication_head: pending_after_this_commit
+
+review:
+  mode: fix_verification
+  verdict: pass
+  reviewer:
+    role: normal_reviewer
+    continuity:
+      same_reviewer_as_source_review: true
+      reason: preserve finding identities and verify closure in the same normal-review context
+    independence:
+      implemented_design_fix: false
+      prior_writes_are_review_artifacts_only: true
+  source_review:
+    report: reports/2026-08-30-pr-3-additional-design-review.md
+    reviewed_head: 8e6e7499204fccf0643da82f274d1485dc0e3272
+    verdict: fail
+    active_finding_count: 8
+  verification_report: reports/2026-08-30-pr-3-additional-design-fix-verification.md
+  new_active_findings: []
+
+source_findings:
+  - id: F-PR3-010
+    severity: high
+    source_status: active
+    verification_status: resolved
+    evidence:
+      - IntervalUnion2 is defined as tight closed enclosures of connected components, not an exact open-boundary set type.
+      - Count=2 allows First.Upper <= Second.Lower and equality is not merged.
+      - DivideToUnion([1,2], Entire), ReciprocalToUnion(Entire), and ReverseMultiply([1,2], Entire) are fixed Count=2 fixtures.
+  - id: F-PR3-011
+    severity: high
+    source_status: active
+    verification_status: resolved
+    evidence:
+      - Strictly-negative x has an explicit six-class y branch-cut matrix.
+      - Lower-side contact returns the closed enclosure [-pi,+pi], Zero returns Pi, and signed zero is not treated as two branch sides.
+  - id: F-PR3-012
+    severity: medium
+    source_status: active
+    verification_status: resolved
+    evidence:
+      - Scalar PowDown/Up requires x>0.
+      - Zero-boundary limit/value candidates 0, 1, and +Infinity are injected by the interval layer.
+      - All a==0 exponent classes and original witnesses are explicit.
+  - id: F-PR3-013
+    severity: medium
+    source_status: active
+    verification_status: resolved
+    evidence:
+      - Both one-sided-zero denominator tables were restored.
+      - DivideToUnion.ConvexHull == ordinary division is required for all cases.
+  - id: F-PR3-014
+    severity: medium
+    source_status: active
+    verification_status: resolved
+    evidence:
+      - Empty/bounded-common/unbounded cancellative 3x3 matrix is normative.
+      - Bounded/common widths are compared exactly, not by rounded Width properties.
+  - id: F-PR3-015
+    severity: medium
+    source_status: active
+    verification_status: resolved
+    evidence:
+      - IntervalUnion2 and DecoratedInterval expose complete C# value equality/hash/operator contracts.
+      - IntervalUnion2 indexer invalid access is ArgumentOutOfRangeException.
+      - Decorated semantic equality remains distinct from reflexive C# value equality.
+  - id: F-PR3-016
+    severity: medium
+    source_status: active
+    verification_status: resolved
+    evidence:
+      - Decoration propagation includes result-state cap Trv/Dac/Com.
+      - Canonical decorated construction enforces the cap and reserves Ill for NaI.
+  - id: F-PR3-017
+    severity: low
+    source_status: active
+    verification_status: resolved
+    evidence:
+      - Strict endpoint-wise less restores all Empty cases.
+      - BothEmpty <-> BothEmpty is restored in overlap inverse rules.
+
+scope:
+  reviewed:
+    - F-PR3-010 through F-PR3-017 by finding identity
+    - directly affected sibling cases and regression
+    - implementation-side follow-up report/handoff accuracy
+    - selected previously-reviewed preservation fingerprints because design version 5 rewrote the sole normative file
+    - exact-head CI state
+  not_repeated:
+    - full four-arithmetic numerical review
+    - full Phase 4 initial review outside directly affected regression scope
+
+files:
+  technical_change:
+    - path: doc/Design/detail/IntervalArithmetic.md
+      commit: 2fb636f9f5322f4918dfc10680c14ba59147a25e
+      purpose: design version 5 resolving additional-design findings
+  implementation_side_administrative:
+    - path: reports/2026-08-30-pr-3-additional-design-review-follow-up.md
+    - path: reports/2026-08-30-pr-3-additional-design-review-follow-up-handoff.yaml
+  reviewer_artifacts:
+    - path: reports/2026-08-30-pr-3-additional-design-fix-verification.md
+      commit: 9fc5158fa8a527753bc095455a5bc12f5257d47e
+    - path: reports/2026-08-30-pr-3-additional-design-fix-verification-handoff.yaml
+      commit: commit_pending
+
+validation:
+  documentation_review:
+    result: passed
+    evidence:
+      - All eight required actions map to normative version-5 sections and deterministic fixtures.
+      - Pinned inari two-output/cancellative/decorated behavior was used as secondary evidence where applicable.
+      - Directly affected boundary cases were re-reasoned, including Atan2 quadrant monotonicity and positive-base Pow zero limits.
+  build_tests:
+    result: not_applicable
+    reason: documentation-only PR with no executable project or test target
+  exact_head_ci_at_review_start:
+    head_sha: b88aed05640dcf1fb00328aff7ba621ce9e0ccda
+    matching_pull_request_runs: 0
+    status: CI未実施
+    substituted_other_sha: false
+  final_exact_head_ci:
+    head_sha: pending_after_this_commit
+    matching_pull_request_runs: pending
+    status: pending_exact_head_check
+    substituted_other_sha: false
+
+coverage:
+  - criterion: finding_identity_closure
+    disposition: checked_no_finding
+  - criterion: zero_touch_union_semantics
+    disposition: checked_no_finding
+  - criterion: atan2_branch_cut_containment
+    disposition: checked_no_finding
+  - criterion: pow_zero_boundary
+    disposition: checked_no_finding
+  - criterion: one_sided_extended_division
+    disposition: checked_no_finding
+  - criterion: cancellative_empty_semantics
+    disposition: checked_no_finding
+  - criterion: value_equality_hash_indexer
+    disposition: checked_no_finding
+  - criterion: decoration_result_state_cap
+    disposition: checked_no_finding
+  - criterion: relation_overlap_edges
+    disposition: checked_no_finding
+  - criterion: direct_regression
+    disposition: checked_no_finding
+  - criterion: prior_core_preservation_fingerprints
+    disposition: checked_no_finding
+  - criterion: exact_head_ci
+    disposition: checked_no_finding
+    note: zero matching runs means CI未実施, not success
+
+held:
+  - item: Phase 4A final public naming
+    reason: explicit later API review gate
+  - item: Midpoint tie-policy final conformance review
+    reason: explicit later Phase 4A gate
+  - item: elementary production backend
+    reason: managed/native selection remains benchmark/proof/deployment decision
+  - item: parser resource-limit numeric values and final interchange details
+    reason: explicit implementation-subphase gate
+
+blocked: []
+unexplored: []
+
+report:
+  path: reports/2026-08-30-pr-3-additional-design-fix-verification.md
+  verdict: pass
+
+next_action:
+  type: implementation_or_owner_decision
+  summary: Additional Phase 4 design finding set is closed. Future implementation must follow phase gates, TDD, diagnostic artifacts, and exact-current-HEAD CI requirements.
+  merge_allowed: false
+
+transport:
+  method: repository_file
+  packet_path: reports/2026-08-30-pr-3-additional-design-fix-verification-handoff.yaml
+  final_publication_note: >-
+    This packet cannot contain its own future commit SHA. Final PR current HEAD and exact-head workflow evidence are recorded after persistence in the PR body/comment.
