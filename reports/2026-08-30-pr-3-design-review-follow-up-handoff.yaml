@@ -1,0 +1,432 @@
+schema_version: 3
+producer:
+  skill: chat-implementation-worker
+  mode: review_follow_up
+  generated_at: 2026-08-30T14:20:00+09:00
+
+repository: ssaattww/Devo6.Interval
+issue_or_pr: "PR #3"
+task_id: null
+branch: docs/detailed-interval-arithmetic-design
+base_ref: main
+base_sha: ad5c058f8a4164b0c7d0763c65246914ea5d1c03
+
+target:
+  reviewed_technical_head: da6e2ae04d35b01acfb307953a093c81c15342b8
+  pr_head_before_fix: 4e9cfc7787ee885b98ea7253f93bc48e876d3086
+  technical_fix_head: 3b0c103dd5fb523b17b90ff9026d7384c0cf3ad4
+  report_head: 4aa86f2f7e357c3b5a0b05dd8aabce4874f22291
+  current_head_before_packet: 4aa86f2f7e357c3b5a0b05dd8aabce4874f22291
+  final_head: commit_pending
+  commit_range: 4e9cfc7787ee885b98ea7253f93bc48e876d3086..commit_pending
+  authoritative_review_report: reports/2026-08-29-pr-3-design-review-exhaustive.md
+  superseded_initial_review_report: reports/2026-08-29-pr-3-design-review.md
+
+verification:
+  capability: remote_ci_only
+  capability_evidence:
+    - Repository reads and writes were performed through the required GitHub connector.
+    - PR #3 is documentation-only and the repository has no executable project or test workflow.
+    - Numerical branch logic was checked against pinned kv source and the authoritative review conditions.
+  technical_head: 3b0c103dd5fb523b17b90ff9026d7384c0cf3ad4
+  administrative_parent: 4aa86f2f7e357c3b5a0b05dd8aabce4874f22291
+  commit:
+    state: commit_pending
+    review_target_sha: commit_pending
+  push:
+    state: push_pending
+    head_sha: commit_pending
+  ci_wait:
+    state: ci_wait_pending
+    required_for: final exact-head publication evidence
+  final_publication:
+    sequence: final_handoff_commit_then_pr_update_then_exact_head_pull_request_ci_check_then_pr_comment
+    pr_action: update
+
+source_review:
+  mode: exhaustive_initial_review
+  verdict: fail
+  reviewed_head: da6e2ae04d35b01acfb307953a093c81c15342b8
+  authoritative_report: reports/2026-08-29-pr-3-design-review-exhaustive.md
+  review_handoff: reports/2026-08-29-pr-3-design-review-exhaustive-handoff.yaml
+  active_finding_count: 7
+  severity_counts:
+    high: 1
+    medium: 5
+    low: 1
+  withdrawn_findings:
+    - id: F-PR3-003
+      status: withdrawn_erratum
+      action: no implementation action
+      reason: >-
+        The exhaustive review withdrew the previous CI handoff-state complaint. It is not
+        treated as an active implementation finding. Final exact-head CI evidence is still
+        published after this packet commit.
+
+authoritative_requirements:
+  - source: user_instruction
+    reference: current chat
+    summary: Address the review findings on PR #3.
+  - source: repository_design
+    reference: doc/Design/basic/IntervalArithmetic.md
+    summary: Preserve IEEE 1788.1-oriented semantics, double endpoints, outward rounding, Empty/Entire, and the [-Lower, Upper] representation.
+  - source: review_report
+    reference: reports/2026-08-29-pr-3-design-review-exhaustive.md
+    summary: Address all seven active findings in one design correction pass, then request fix verification.
+  - source: uploaded_skill
+    reference: chatgpt-worker-skills.zip
+    summary: Resolve findings by identity, keep changes reviewable, persist a detailed report and handoff, check exact-head CI, update the PR, and do not merge.
+
+development_policy:
+  method: review_follow_up_documentation
+  testing_order: not applicable to this documentation-only correction; Phase 1 implementation remains TDD
+  governing_source: authoritative exhaustive review
+validation_plan:
+  commands: []
+  checks:
+    - Verify each active finding has an explicit design section and closure evidence.
+    - Verify multiplication and division pseudocode against pinned kv conditions.
+    - Verify reference responsibilities do not use kv zero-containing interval division as an oracle.
+    - Verify SIMD capabilities separate AVX2/SSE2 from Fma.IsSupported.
+    - Verify x64 and ARM64 CI requirements and failure artifacts are explicit.
+    - Check workflow runs only after the final packet commit and only for the exact PR HEAD.
+  required_failure_diagnostics:
+    - not applicable to the current documentation-only PR because no executable test workflow exists
+blocked: []
+
+authorized_actions:
+  - read_repository
+  - edit_documentation
+  - write_report
+  - write_handoff
+  - commit
+  - push
+  - update_pr
+  - comment_pr
+write_boundary:
+  allowed:
+    - path_or_operation: doc/Design/detail/IntervalArithmetic.md
+      reason: authoritative review requires detailed design corrections
+    - path_or_operation: reports/2026-08-30-pr-3-design-review-follow-up.md
+      reason: durable per-finding follow-up report
+    - path_or_operation: reports/2026-08-30-pr-3-design-review-follow-up-handoff.yaml
+      reason: lossless continuation and verification packet
+    - path_or_operation: PR #3 body and concise top-level comment
+      reason: publish current status and verification target
+  forbidden:
+    - path_or_operation: merge
+      reason: repository owner performs merge
+    - path_or_operation: src/**
+      reason: current scope is detailed-design correction only
+    - path_or_operation: tests/**
+      reason: current scope is detailed-design correction only
+    - path_or_operation: .github/workflows/**
+      reason: no executable/test target exists in this PR
+
+scope:
+  - Complete managed scalar directed-rounding pseudocode.
+  - Define strict threshold and residual-tie behavior.
+  - Define deterministic boundary fixtures.
+  - Separate x86 SIMD and FMA capabilities with fallbacks.
+  - Define IEEE 1788.1 Phase 1 conformance strategy.
+  - Define reproducible exact-rational, inari, kv, and ITF1788 reference mechanisms.
+  - Define Linux x64 and Linux ARM64 CI evidence.
+  - Restore native-backend decision traceability.
+non_goals:
+  - Implement the interval library.
+  - Add projects, tests, adapters, or workflows.
+  - Execute Phase 1 tests.
+  - Implement SIMD or native backends.
+  - Change the merged basic design.
+
+files:
+  changed:
+    - path: doc/Design/detail/IntervalArithmetic.md
+      purpose: design version 2 resolving all active findings
+    - path: reports/2026-08-30-pr-3-design-review-follow-up.md
+      purpose: detailed finding closure and validation report
+    - path: reports/2026-08-30-pr-3-design-review-follow-up-handoff.yaml
+      purpose: review follow-up continuation packet
+  inspected:
+    - path: reports/2026-08-29-pr-3-design-review-exhaustive.md
+      purpose: authoritative finding set
+    - path: reports/2026-08-29-pr-3-design-review-exhaustive-handoff.yaml
+      purpose: finding identities, severity, and required actions
+    - path: doc/Design/basic/IntervalArithmetic.md
+      purpose: authoritative basic design and carried decisions
+    - path: mskashi/kv/kv/rdouble-nohwround.hpp at c7f8f2324a0e403cca6b39f46088a22843d440db
+      purpose: exact multiplication and division rounding branches
+    - path: unageek/inari at 18b83a571d7681c76067bc38d90a74e8be29f545
+      purpose: set semantics, representation, and reference-adapter target
+    - path: unageek/ITF1788 at d8c2a64478ebdc9cbde6ccef33eaad3bed60ed81
+      purpose: pinned test-only conformance source
+    - path: .github/workflows
+      purpose: confirm the repository still has no executable workflow
+  intentionally_untouched:
+    - path_or_area: src/**
+      reason: no implementation was requested in this follow-up
+    - path_or_area: tests/**
+      reason: no implementation was requested in this follow-up
+    - path_or_area: .github/workflows/**
+      reason: no executable target exists yet
+    - path_or_area: doc/Design/basic/IntervalArithmetic.md
+      reason: approved basic design remains unchanged
+    - path_or_area: prior review and implementation reports
+      reason: retained as immutable history; this follow-up report supersedes their current-state summary
+
+commands: []
+tests:
+  - name: review finding traceability inspection
+    phase: documentation validation
+    result: passed
+    head_sha: 3b0c103dd5fb523b17b90ff9026d7384c0cf3ad4
+    evidence: Each of the seven active finding IDs maps to a specific corrected design section and disposition.
+  - name: directed-rounding branch consistency inspection
+    phase: documentation validation
+    result: passed
+    head_sha: 3b0c103dd5fb523b17b90ff9026d7384c0cf3ad4
+    evidence: Multiplication and division threshold, scaled comparison, residual tie, and overflow conditions match the pinned kv reference logic.
+  - name: reference responsibility inspection
+    phase: documentation validation
+    result: passed
+    head_sha: 3b0c103dd5fb523b17b90ff9026d7384c0cf3ad4
+    evidence: Exact rational is primary; inari is interval-semantic; kv is primitive-only and excludes incompatible zero-containing interval division.
+  - name: executable build and tests
+    phase: repository validation
+    result: not_applicable
+    head_sha: 3b0c103dd5fb523b17b90ff9026d7384c0cf3ad4
+    evidence: PR #3 has no executable project or test target.
+
+ci:
+  required: false
+  reason: documentation-only PR with no executable workflow
+  exact_target_sha: commit_pending
+  matching_runs: check_pending
+  execution_status: check_pending
+  substituted_other_sha: false
+  workflow: null
+  run_id: null
+  artifacts: []
+
+implementation:
+  mode: review_follow_up
+  outcome: completed_pending_publication
+  technical_fix_head: 3b0c103dd5fb523b17b90ff9026d7384c0cf3ad4
+  final_head: commit_pending
+  commits:
+    - sha: 3b0c103dd5fb523b17b90ff9026d7384c0cf3ad4
+      purpose: resolve all active detailed-design review findings
+    - sha: 4aa86f2f7e357c3b5a0b05dd8aabce4874f22291
+      purpose: persist the detailed review follow-up report
+    - sha: commit_pending
+      purpose: persist this review follow-up handoff
+  addressed_findings:
+    - id: F-PR3-001
+      severity: high
+      disposition: addressed
+      paths:
+        - doc/Design/detail/IntervalArithmetic.md §7-§10
+        - doc/Design/detail/IntervalArithmetic.md §15
+      evidence: Complete MultiplyUp/Down and DivideUp/Down pseudocode, strict thresholds, scaled ties, large-denominator returns, and overflow behavior.
+    - id: F-PR3-002
+      severity: medium
+      disposition: addressed
+      paths:
+        - doc/Design/detail/IntervalArithmetic.md §3.2
+        - doc/Design/detail/IntervalArithmetic.md §19
+      evidence: Independent ISA capability checks and explicit AVX-512, AVX2+FMA, AVX2-no-FMA, SSE2-no-FMA, ARM64, and scalar rows.
+    - id: F-PR3-004
+      severity: medium
+      disposition: addressed
+      paths:
+        - doc/Design/detail/IntervalArithmetic.md §14
+        - doc/Design/detail/IntervalArithmetic.md §17
+      evidence: Pinned ITF1788 source, Phase 1 operation matrix, adaptation, deferral, and artifact contract.
+    - id: F-PR3-005
+      severity: medium
+      disposition: addressed
+      paths:
+        - doc/Design/detail/IntervalArithmetic.md §13
+      evidence: Primary/secondary oracle roles, pinned CLI adapters, JSONL format, lock file, regeneration job, and kv incompatibility exclusion.
+    - id: F-PR3-006
+      severity: medium
+      disposition: addressed
+      paths:
+        - doc/Design/detail/IntervalArithmetic.md §17
+        - doc/Design/detail/IntervalArithmetic.md §18.2
+      evidence: Linux x64/ARM64 matrix, same suite, per-architecture artifacts, canonical corpus comparison.
+    - id: F-PR3-007
+      severity: medium
+      disposition: addressed
+      paths:
+        - doc/Design/detail/IntervalArithmetic.md §15
+      evidence: Exact threshold bit patterns, four scaled multiplication branches, division residual ties, exact/no-correction, and signed overflow fixtures.
+    - id: F-PR3-008
+      severity: low
+      disposition: addressed
+      paths:
+        - doc/Design/detail/IntervalArithmetic.md §20
+      evidence: Managed-only current roadmap plus explicit Phase 3/Phase 4 native decision gates and acceptance criteria.
+  failure_diagnostics: []
+  blocked_items: []
+
+review:
+  mode: fix_verification_required
+  reviewed_head: da6e2ae04d35b01acfb307953a093c81c15342b8
+  authoritative_findings_report: reports/2026-08-29-pr-3-design-review-exhaustive.md
+  reviewer:
+    identity: unknown_for_fix_verification
+    role: independent_normal_reviewer_required
+    continuity:
+      previous_reviewer_identity: ChatGPT GPT-5.6 Sol
+      changed: unknown
+      reason: fix verification has not yet run
+    independence:
+      implemented_change: false_required
+      implemented_review_fix: false_required
+      served_as_normal_reviewer: required
+      inherited_conversation: allowed_with_reinspection
+      evidence: []
+  verdict: pending
+  required_coverage:
+    - Verify F-PR3-001 through F-PR3-008 active set excluding withdrawn F-PR3-003.
+    - Verify no contradictory regression was introduced by the full design rewrite.
+    - Verify report and handoff accurately identify the technical fix head.
+    - Check CI only for the final exact PR HEAD.
+  independent_closure:
+    initial_independent_reviewed_head: da6e2ae04d35b01acfb307953a093c81c15342b8
+    closure_reviewed_heads: []
+    reviewer_continuity: pending
+    closure_scope:
+      - all seven active findings
+      - full corrected detailed design for regression
+    completeness_matrix: []
+  validation_assessment: []
+  reserved_report_paths: []
+  report_attestation:
+    allowed: pending
+    reviewed_implementation_head: 3b0c103dd5fb523b17b90ff9026d7384c0cf3ad4
+    allowed_paths:
+      - reports/**
+    required_first_parent: 3b0c103dd5fb523b17b90ff9026d7384c0cf3ad4
+    maximum_commits_after_reviewed_head: null
+    forbidden_path_classes:
+      - src/**
+      - tests/**
+      - doc/Design/detail/IntervalArithmetic.md
+    no_later_commits_required: false
+    validation_status: pending
+    validation_evidence: []
+  summary:
+    - The implementation worker reports all active findings addressed.
+    - This packet does not issue an independent review verdict.
+
+report:
+  report_type: review_follow_up_implementation_report
+  outcome: created
+  persistence_mode: repository_file
+  supersedes_current_state_of:
+    - reports/2026-08-29-interval-arithmetic-detailed-design.md
+    - reports/2026-08-29-interval-arithmetic-detailed-design-handoff.yaml
+  paths:
+    - reports/2026-08-30-pr-3-design-review-follow-up.md
+    - reports/2026-08-30-pr-3-design-review-follow-up-handoff.yaml
+  reviewed_head: da6e2ae04d35b01acfb307953a093c81c15342b8
+  attestation_head: 3b0c103dd5fb523b17b90ff9026d7384c0cf3ad4
+  pr_comments: []
+  summary:
+    - Detailed per-finding closure is persisted in the follow-up report.
+    - A concise PR comment is posted only after the final packet commit and exact-head CI check.
+
+findings:
+  - id: F-PR3-001
+    severity: high
+    status: addressed_pending_verification
+  - id: F-PR3-002
+    severity: medium
+    status: addressed_pending_verification
+  - id: F-PR3-004
+    severity: medium
+    status: addressed_pending_verification
+  - id: F-PR3-005
+    severity: medium
+    status: addressed_pending_verification
+  - id: F-PR3-006
+    severity: medium
+    status: addressed_pending_verification
+  - id: F-PR3-007
+    severity: medium
+    status: addressed_pending_verification
+  - id: F-PR3-008
+    severity: low
+    status: addressed_pending_verification
+held: []
+unexplored:
+  - Independent fix verification has not run against the final immutable PR HEAD.
+unknown:
+  - field_or_fact: final handoff persistence commit SHA
+    reason: it does not exist until this packet is committed
+  - field_or_fact: final exact-head workflow run state
+    reason: it must be checked after this packet commit
+not_applicable:
+  - field_or_area: local build and test execution
+    reason: documentation-only PR with no executable project
+  - field_or_area: diagnostic artifact download
+    reason: no workflow run or executable test exists in this PR
+remaining_risks:
+  - Phase 1 code, tests, adapters, corpus, and workflow remain unimplemented.
+  - The pilot API remains provisional until Phase 2.
+  - SIMD and native adoption remain subject to correctness and benchmark gates.
+
+source_payloads:
+  - source_skill: work-context-manager
+    output_contract_version: unknown
+    content_type: text/markdown
+    payload: Resolved PR #3 branch, reviewed technical head, superseding exhaustive review, active findings, and write boundaries.
+  - source_skill: implementation-worker
+    output_contract_version: unknown
+    content_type: text/markdown
+    payload: Corrected the detailed design in one technical commit and inspected sibling numerical, capability, oracle, CI, and native-decision cases.
+  - source_skill: report-writer
+    output_contract_version: unknown
+    content_type: text/markdown
+    payload: Persisted a detailed per-finding follow-up report and this schema-v3 handoff; concise PR publication remains after exact-head CI inspection.
+extensions:
+  - namespace: devo6.interval.review_follow_up
+    payload:
+      technical_fix_head: 3b0c103dd5fb523b17b90ff9026d7384c0cf3ad4
+      finding_set: [F-PR3-001, F-PR3-002, F-PR3-004, F-PR3-005, F-PR3-006, F-PR3-007, F-PR3-008]
+      withdrawn: [F-PR3-003]
+      design_version: 2
+
+next_action:
+  type: fix_verification
+  target_skill: review-worker
+  mode: fix_verification
+  summary: Independently re-review the final PR #3 HEAD and verify closure of all seven active findings without treating F-PR3-003 as active.
+  instructions:
+    - Review the immutable final PR HEAD, not the old technical head.
+    - Reinspect the full corrected detailed design for regressions.
+    - Preserve finding IDs and severities.
+    - Use only a workflow run whose head SHA exactly matches the current PR HEAD.
+    - Report CI未実施 if no exact-head run exists.
+    - Do not merge.
+  required_attachments_or_references:
+    - doc/Design/detail/IntervalArithmetic.md
+    - reports/2026-08-29-pr-3-design-review-exhaustive.md
+    - reports/2026-08-30-pr-3-design-review-follow-up.md
+    - reports/2026-08-30-pr-3-design-review-follow-up-handoff.yaml
+  requested_authorized_actions:
+    - read_repository
+    - review_pr
+    - write_review_report
+    - comment_pr
+
+transport:
+  method: repository_file
+  packet_path: reports/2026-08-30-pr-3-design-review-follow-up-handoff.yaml
+  packet_url: null
+  transport_note: >-
+    This packet is committed on the PR branch. Its own final commit SHA and exact-head
+    workflow result are recorded in the PR comment after publication because the packet
+    cannot contain its own future persistence SHA.
