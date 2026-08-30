@@ -158,7 +158,7 @@ infra/documentation/review-gateのみのtaskはRed/Greenを要求しない。そ
 ### 受け入れ条件
 
 - [ ] `[1,2]`の内部論理stateが`[-1,2]`、`[-2,-1]`が`[+2,-1]`であることをinternal test/assertionで確認する。
-- [ ] `Interval.Empty`は内部2 laneの両方が同一repository-defined canonical qNaN stateで、片側だけNaNのraw stateはinternal validationで失敗する。
+- [ ] `Interval.Empty`は内部2 laneの両方が同一repository-defined `CanonicalNaNBits`を持つqNaNで、片側だけNaNのraw stateはinternal validationで失敗する。
 - [ ] `default(Interval) == Interval.Zero` がtrueで、Zeroのpublic Lower bits=`0x8000000000000000`、Upper bits=`0x0000000000000000`となる。
 - [ ] `Interval.Empty.Lower`は`+Infinity`、`Upper`は`-Infinity`を返す。
 - [ ] `Interval.Entire`は`[-Infinity,+Infinity]`、`IsEntire=true`となる。
@@ -275,8 +275,12 @@ infra/documentation/review-gateのみのtaskはRed/Greenを要求しない。そ
 
 ### 受け入れ条件
 
-- [ ] denominator positive `0<c<=d`でP/N/M各classのendpoint式を固定fixtureでpassする。
-- [ ] denominator negative `c<=d<0`でP/N/M各classのendpoint式を固定fixtureでpassする。
+- [ ] denominator positive `0<c<=d`かつnumerator Pではlower=`RD(a/d)`, upper=`RU(b/c)`となる。
+- [ ] denominator positive `0<c<=d`かつnumerator Nではlower=`RD(a/c)`, upper=`RU(b/d)`となる。
+- [ ] denominator positive `0<c<=d`かつnumerator Mではlower=`RD(a/c)`, upper=`RU(b/c)`となる。
+- [ ] denominator negative `c<=d<0`かつnumerator Pではlower=`RD(b/d)`, upper=`RU(a/c)`となる。
+- [ ] denominator negative `c<=d<0`かつnumerator Nではlower=`RD(b/c)`, upper=`RU(a/d)`となる。
+- [ ] denominator negative `c<=d<0`かつnumerator Mではlower=`RD(b/d)`, upper=`RU(a/d)`となる。
 - [ ] `[1,2]/[0,0]=Empty`, `[0,0]/[0,0]=Empty`となり`DivideByZeroException`を送出しない。
 - [ ] `Zero/[0,d]=Zero`, `Zero/[c,0]=Zero`, `Zero/[c,d]` with `c<0<d` = Zeroとなる。
 - [ ] `[1,2]/[0,2]=[RD(1/2),+Infinity]`となる。
@@ -309,7 +313,7 @@ infra/documentation/review-gateのみのtaskはRed/Greenを要求しない。そ
 
 ### 受け入れ条件
 
-- [ ] `tests/ReferenceData/reference-lock.json`にinari SHA=`18b83a...`, kv SHA=`c7f8f...`, ITF1788 SHA=`d8c2a...`, MPFR versionまたは`N/A`を保存する。
+- [ ] `tests/ReferenceData/reference-lock.json`にinari SHA=`18b83a571d7681c76067bc38d90a74e8be29f545`, kv SHA=`c7f8f2324a0e403cca6b39f46088a22843d440db`, ITF1788 SHA=`d8c2a64478ebdc9cbde6ccef33eaad3bed60ed81`, MPFR versionまたは`N/A`を保存する。
 - [ ] lockにadapter/generator hash、toolchain/target triple、generator command、corpus SHA-256、license/NOTICE pathを保存する。
 - [ ] corpusはJSON Lines、caseId昇順、binary64値は16桁hex bitsで保存する。
 - [ ] generatorを同一lock条件で2回実行し、corpus SHA-256が一致する。
@@ -368,9 +372,10 @@ infra/documentation/review-gateのみのtaskはRed/Greenを要求しない。そ
 
 - [ ] scalar implicit/explicit conversionを`Adopt`または`Reject`の1値で記録する。
 - [ ] Adoptならexact C# signatureと成功/失敗fixtureを記載し、Rejectならbaselineにconversion operatorが0件であることをtestする。
-- [ ] `INumber<TSelf>`等generic math interfaceを`Adopt`または`Reject`で記録し、Adoptなら区間に自然な全順序がない点を満たすcontract testを添付する。
+- [ ] generic math候補interfaceが`<`, `<=`, `>`, `>=`またはtotal-order比較契約を必須とする場合、そのinterfaceは`Reject`としpublic baselineに当該interface実装と4比較operatorを追加しない。
+- [ ] total-order比較を要求しないgeneric math interfaceをAdoptする場合、adoptするinterface名と全required member signatureをdecision recordへ列挙し、compile fixtureで全memberを解決できることを確認する。
 - [ ] diagnostic `ToString`と永続化formatを同一契約にするか分離するかを1値で記録し、formal formatを採用する場合はround-trip fixtureを追加する。
-- [ ] 3項目すべてにdecision owner/date/rationale/test pathがあり`TBD`が0件となる。
+- [ ] scalar conversion/generic math/formatの3項目すべてにdecision owner/date/rationale/test pathがあり`TBD`が0件となる。
 
 ## P2-003 public API baseline・breaking-change運用確定
 
@@ -430,7 +435,7 @@ infra/documentation/review-gateのみのtaskはRed/Greenを要求しない。そ
 
 ### 受け入れ条件
 
-- [ ] candidate選択条件が`Avx2.IsSupported && Fma.IsSupported`相当である。
+- [ ] candidate選択条件が`Avx2.IsSupported && Fma.IsSupported`である。
 - [ ] vector FMA residual pathのmul/divがscalar directed primitiveとnormal/subnormal/overflow/threshold corpusでbitwise一致する。
 - [ ] FMA=true/AVX2=false test seamではこのcandidateを選択しない。
 - [ ] mismatch 0件の場合のみstatus=`qualified_correctness`、1件以上なら`rejected_correctness`とする。
@@ -442,9 +447,9 @@ infra/documentation/review-gateのみのtaskはRed/Greenを要求しない。そ
 
 ### 受け入れ条件
 
-- [ ] `AVX2=true,FMA=false`ではadd/sub vector候補を評価し、mul/divはqualified implementationがない限りscalar fallbackとなる。
-- [ ] `SSE2=true,FMA=false`ではVector128 add/sub候補を評価し、mul/divはscalar fallbackとなる。
-- [ ] ARM64 AdvSimd candidateはscalar differential全required corpusをbitwise passするまでproduction candidate statusにしない。
+- [ ] `AVX2=true,FMA=false`ではadd/sub vector候補を評価し、mul/div candidateがP3-001と同一required differential corpusでmismatch=0にならない限りmul/divはscalar fallbackとする。
+- [ ] `SSE2=true,FMA=false`ではVector128 add/sub候補を評価し、mul/div candidateが同じrequired corpusでmismatch=0にならない限りmul/divはscalar fallbackとする。
+- [ ] ARM64 AdvSimd candidateはscalar differential全required corpusでmismatch=0となるまでproduction candidate statusにしない。
 - [ ] 各feature combinationに `selected backend / add-sub status / mul-div status / mismatch count / fallback` をmatrixで保存する。
 - [ ] unsupported combinationでbasic public APIが`PlatformNotSupportedException`を送出しない。
 
@@ -563,7 +568,7 @@ infra/documentation/review-gateのみのtaskはRed/Greenを要求しない。そ
 - [ ] Empty inputは4関数すべてEmptyを返す。
 - [ ] Infinity endpointを持つ区間でInfinity endpointを保持する。
 - [ ] `Floor([1.2,2.8])=[1,2]`, `Ceiling([1.2,2.8])=[2,3]`, `Truncate([-1.8,2.8])=[-1,2]`となる。
-- [ ] RoundはP4A-000で確定したmode matrixを各mode最低1 tie fixtureでpassする。
+- [ ] P4A-000 decision recordにサポートする全`MidpointRounding` enum値と各1 tie input/expected integerを表で固定し、Round testがその全rowをpassする。
 - [ ] 未知`MidpointRounding` enum値をcast入力した場合`ArgumentOutOfRangeException`となる。
 - [ ] integer result endpointに追加ULP拡張を行わない。
 
@@ -593,7 +598,7 @@ infra/documentation/review-gateのみのtaskはRed/Greenを要求しない。そ
 - [ ] P4A-008が`完了`である。
 - [ ] review reportに§25～§27、reviewed HEAD、verdict=pass、unresolved findings=0を記録する。
 - [ ] diagnostic workflowが存在し、P4A final run artifactを1件取得できる。
-- [ ] smoke expected `Square([-2,1])=[-0.0,4]` をharnessへ登録しRed testとして実行可能である。
+- [ ] input=`[-2,1]`, expected=`[-0.0,4]`のSquare smoke Red testをharnessへ登録し実行commandをreportへ記録する。
 - [ ] P4B-001 Red commit前にP4B-000 status=`完了`とする。
 
 ## P4B-001 tight IntervalConstants
@@ -640,7 +645,7 @@ infra/documentation/review-gateのみのtaskはRed/Greenを要求しない。そ
 - [ ] `Sqrt(Empty)=Empty`, `Sqrt([-4,-1])=Empty`, `Sqrt([-1,4])=[-0.0,2]`, `Sqrt([1,4])=[1,2]`となる。
 - [ ] `SmallSqrtInputThreshold=2^-969`, `SqrtInputScale=2^106`, `SqrtResultScale=2^53`をfixtureで確認する。
 - [ ] `2^-969` previous/exact/nextの3caseでselected branchとMPFR directed output bitsを固定する。
-- [ ] candidate補正前後でexact-product comparisonを行い、必要時のみBitIncrement/BitDecrementするbranch witnessを持つ。
+- [ ] candidate補正前後でexact-product comparisonを行い、MPFR resultがcandidateより上側ならUpを`BitIncrement`、下側ならDownを`BitDecrement`し、exact一致時は無補正となるfixed witnessを持つ。
 
 ## P4B-005 integer Pow / Root
 
@@ -707,8 +712,9 @@ infra/documentation/review-gateのみのtaskはRed/Greenを要求しない。そ
 
 - [ ] Empty inputはEmptyを返す。
 - [ ] lower=-Infinity endpointはlower result=+0.0、upper=+Infinity endpointはupper result=+Infinityとなる。
-- [ ] finite normal/subnormal/underflow/overflow固定corpusでMPFR RNDD/RNDU bitsと一致する。
-- [ ] Exp/Exp2/Exp10各関数に最低1 exact-ish point、1 underflow boundary、1 overflow boundary fixtureを持つ。
+- [ ] `Exp([0,0])=[1,1]`, `Exp2([0,0])=[1,1]`, `Exp10([0,0])=[1,1]`となる。
+- [ ] 各関数でMPFR corpusからunderflow境界直前/直後1caseずつ、overflow境界直前/直後1caseずつをfixtureへ固定しRNDD/RNDU bitsと一致する。
+- [ ] finite normal/subnormal corpusでMPFR RNDD/RNDU bits mismatch=0となる。
 
 ## P4C-002 Log / Log2 / Log10
 
@@ -794,7 +800,8 @@ infra/documentation/review-gateのみのtaskはRed/Greenを要求しない。そ
 
 - [ ] Sin intervalが`-pi/2+2kpi`を含むfixtureでlower=-1、`+pi/2+2kpi`を含むfixtureでupper=+1となる。
 - [ ] Cos intervalが`pi+2kpi`を含むfixtureでlower=-1、`2kpi`を含むfixtureでupper=+1となる。
-- [ ] nonbounded/十分広いfixtureでSin/Cosとも`[-1,1]`となる。
+- [ ] `Sin(Entire)=[-1,1]`, `Cos(Entire)=[-1,1]`となる。
+- [ ] input=`[-IntervalConstants.Pi.Upper,+IntervalConstants.Pi.Upper]`でSin/Cosとも`[-1,1]`となる。
 - [ ] branch内endpoint-only fixtureでMPFR directed endpoint bitsと一致する。
 - [ ] fixed-seed propertyでresult subset `[-1,1]`が全件trueとなる。
 
@@ -818,10 +825,10 @@ infra/documentation/review-gateのみのtaskはRed/Greenを要求しない。そ
 
 - [ ] operand EmptyならEmpty、`X=Zero && Y=Zero`ならEmptyとなる。
 - [ ] strictly negative XでY strictly negative/nonpositive-touch-zero/Zero/nonnegative-touch-zero/strictly-positive/crossing-zeroの6classを各1fixture以上持つ。
-- [ ] `Atan2([-1,0],[-2,-1])`はlower=`-Pi.Upper`, upper=`+Pi.Upper`となる。
+- [ ] `Atan2([-1,0],[-2,-1])`はlower=`-IntervalConstants.Pi.Upper`, upper=`+IntervalConstants.Pi.Upper`となる。
 - [ ] `Atan2(Zero,[-2,-1])=IntervalConstants.Pi`となる。
-- [ ] `Atan2([0,1],[-2,-1])`はQII lower directed endpoint～`Pi.Upper`となる。
-- [ ] `Atan2([-1,1],[-2,-1])`は`[-Pi.Upper,+Pi.Upper]`となる。
+- [ ] `Atan2([0,1],[-2,-1])`はlower=`Atan2Down(1,-1)`, upper=`IntervalConstants.Pi.Upper`となる。
+- [ ] `Atan2([-1,1],[-2,-1])`は`[-IntervalConstants.Pi.Upper,+IntervalConstants.Pi.Upper]`となる。
 - [ ] signed zeroをbranch cut上下の別点として扱わずY=Zeroをprincipal value +piとする。
 - [ ] sign-class直積、axis、origin、negative-x branch cut corpusでMPFR/reference mismatch=0となる。
 
@@ -831,12 +838,17 @@ infra/documentation/review-gateのみのtaskはRed/Greenを要求しない。そ
 
 ### 受け入れ条件
 
-- [ ] negative base domainをgeneral Powへ受け入れず、integer exponentはinteger overloadで扱う。
+- [ ] baseを`[0,+Infinity]`へclipし、clip後EmptyならEmptyを返す。negative-only baseはEmpty、negative-to-positive crossing baseは非negative部分だけを評価する。
 - [ ] `Pow([0,0.5],[0,1])=[0,1]`となる。
 - [ ] `Pow([0,0.5],[-1,0])=[1,+Infinity]`となる。
 - [ ] `Pow([0,2],[0,1])=[0,2]`となる。
 - [ ] `Pow([0,0],[-1,0])=Empty`、`Pow([0,0],[0,1])=Zero`となる。
-- [ ] zero-touch baseについてexponent 6class `d<0`, `c<0&&d==0`, `c==d==0`, `c<0<d`, `c==0<d`, `c>0`を各1fixture以上持つ。
+- [ ] zero-touch base`[0,b]`, `b>0`かつ`d<0`ではlower=`b<1 ? PowDown(b,d) : PowDown(b,c)`, upper=`+Infinity`となる。
+- [ ] zero-touch baseかつ`c<0 && d==0`ではlower=`b<=1 ? 1 : PowDown(b,c)`, upper=`+Infinity`となる。
+- [ ] zero-touch baseかつ`c==0 && d==0`では`[1,1]`となる。
+- [ ] zero-touch baseかつ`c<0<d`では`[0,+Infinity]`となる。
+- [ ] zero-touch baseかつ`c==0<d`ではlower=0, upper=`b<=1 ? 1 : PowUp(b,d)`となる。
+- [ ] zero-touch baseかつ`c>0`ではlower=0, upper=`b<1 ? PowUp(b,c) : (b==1 ? 1 : PowUp(b,d))`となる。
 - [ ] internal hookで`PowDown/Up(0,0)`および`PowDown/Up(0,negative)`call count=0を確認する。
 - [ ] strictly-positive-base corner formula corpusでMPFR mismatch=0となる。
 
@@ -865,8 +877,9 @@ infra/documentation/review-gateのみのtaskはRed/Greenを要求しない。そ
 - [ ] P4D-006が`完了`である。
 - [ ] §34～§43 review reportにreviewed HEAD、verdict=pass、unresolved findings=0を記録する。
 - [ ] parser syntaxをexact grammarとしてdecision recordへ固定し、hex literalはC99-style `0x<hex>[.<hex>]p[+-]<decimal exponent>`をaccepted syntaxに含める。
-- [ ] parser resource limit `max input length / max significand digits / max exponent digits`を正整数の具体値でpreflight recordへ固定し`TBD`を0件にする。
-- [ ] binary interchange v1を採用する場合`length=18`, byte offsets, little-endianをpreflight recordへ固定する。
+- [ ] parser resource limit `max input length / max significand digits / max exponent digits / max exception excerpt length`を正整数のnumeric literalとしてpreflight recordへ固定し`TBD`を0件にする。
+- [ ] binary interchange v1を採用する場合`length=18`, byte0=version, byte1=state, byte2..9=Lower LE, byte10..17=Upper LEをpreflight recordへ固定する。
+- [ ] Parse rejected inputで送出するexception typeまたはerror contractを1つに固定し、TryParseはfalse/out=Emptyとするdecisionを記録する。
 - [ ] smoke fixture `DivideToUnion([1,2],Entire).Count==2`をexisting harnessへ登録する。
 - [ ] P4E-001 Red commit前にP4E-000 status=`完了`とする。
 
@@ -879,7 +892,7 @@ infra/documentation/review-gateのみのtaskはRed/Greenを要求しない。そ
 - [ ] `default(IntervalUnion2).Count==0`, `IsEmpty==true`, `First==Empty`, `Second==Empty`となる。
 - [ ] Count=1はFirst nonempty/Second Empty、Count=2はFirst/Second nonemptyかつ`First.Upper<=Second.Lower`となる。
 - [ ] `First.Upper==Second.Lower`のCount=2をmergeしない固定fixtureを持つ。
-- [ ] `First.Upper>Second.Lower`のinternal Create2はvalidation failureとなる。
+- [ ] `First.Upper>Second.Lower`のinternal Create2はdebug assertionまたはrepository-defined internal validation exceptionのいずれか1つへ固定し、そのnegative fixtureがpassする。
 - [ ] Count0/1/2 equality/hash/operatorはcanonical component列だけに依存し、unused field/NaN payloadへ依存しない。
 - [ ] indexerは`0<=index<Count`以外で`ArgumentOutOfRangeException`となる。
 - [ ] public `Contains(double)`を初版baselineへ追加しない。
@@ -893,8 +906,10 @@ infra/documentation/review-gateのみのtaskはRed/Greenを要求しない。そ
 - [ ] numerator/denominator Emptyまたはdenominator ZeroはCount0となる。
 - [ ] denominator excludes zeroはCount1で`First == ordinary division`となる。
 - [ ] numerator Zeroかつdenominatorにnonzero memberありはCount1 Zeroとなる。
-- [ ] one-sided `[0,d]`/`[c,0]`についてZ/P/N/M 8 combinationsのexpected tableをfixture化する。
-- [ ] strict zero-crossing denominatorでstrict positive/negative numeratorはCount2となる。
+- [ ] `Y=[0,d], d>0`: X=Z -> Count1 Zero、X=P -> Count1 `[RD(a/d),+Infinity]`、X=N -> Count1 `[-Infinity,RU(b/d)]`、X=M -> Count1 Entireとなる。
+- [ ] `Y=[c,0], c<0`: X=Z -> Count1 Zero、X=P -> Count1 `[-Infinity,RU(a/c)]`、X=N -> Count1 `[RD(b/c),+Infinity]`、X=M -> Count1 Entireとなる。
+- [ ] strict zero-crossing denominatorでstrict positive XはFirst=`[-Infinity,RU(a/c)]`, Second=`[RD(a/d),+Infinity]`となる。
+- [ ] strict zero-crossing denominatorでstrict negative XはFirst=`[-Infinity,RU(b/d)]`, Second=`[RD(b/c),+Infinity]`となる。
 - [ ] `DivideToUnion([1,2],Entire)`はCount2でFirst=`[-Inf,-0.0]`, Second=`[+0.0,+Inf]`となる。
 - [ ] numerator contains zeroかつnonzero intervalではstrict crossing denominator result=Count1 Entireとなる。
 - [ ] 全fixtureで`ordinary division == DivideToUnion(...).ConvexHull`となる。
@@ -928,12 +943,14 @@ infra/documentation/review-gateのみのtaskはRed/Greenを要求しない。そ
 
 ### 受け入れ条件
 
-- [ ] Empty/common/unboundedの3x3 class matrix 9cellを各1fixture以上持つ。
-- [ ] `CancelSubtract(Empty,Empty)=Empty`, `CancelSubtract(Empty,bounded)=Empty`となる。
+- [ ] `CancelSubtract(Empty,Empty)=Empty`となる。
+- [ ] `CancelSubtract(Empty,bounded)=Empty`、`CancelSubtract(Empty,unbounded)=Entire`となる。
+- [ ] `CancelSubtract(bounded,Empty)=Entire`、`CancelSubtract(bounded,unbounded)=Entire`となる。
+- [ ] `CancelSubtract(unbounded,Empty)=Entire`、`CancelSubtract(unbounded,bounded)=Entire`、`CancelSubtract(unbounded,unbounded)=Entire`となる。
 - [ ] bounded/common同士でexact width(total)>=exact width(term)なら`[RD(a-c),RU(b-d)]`となる。
-- [ ] exact width(total)<exact width(term)ならEntireとなる。
+- [ ] bounded/common同士でexact width(total)<exact width(term)ならEntireとなる。
 - [ ] width比較にrounded public `Width`だけを使用せずexact expansion/rational relationで判定する。
-- [ ] `CancelAdd(total,term)==CancelSubtract(total,-term)`が全9class fixtureで成立する。
+- [ ] `CancelAdd(total,term)==CancelSubtract(total,-term)`が上記9class fixtureで成立する。
 
 ## P4E-006 Decoration / default NaI
 
@@ -985,12 +1002,12 @@ infra/documentation/review-gateのみのtaskはRed/Greenを要求しない。そ
 - [ ] C99-style hex `[0x1p+0]`はexact `[1,1]`となる。
 - [ ] `[0x0.0000000000001p-1022]`はmin positive subnormal exact singletonとなる。
 - [ ] `[-0x0p+0]`はzero singletonとしてcanonical lower=-0.0/upper=+0.0となる。
-- [ ] rejected fixture `[+Infinity,1]`, `[1,-Infinity]`, `[Infinity]`, `[NaN,1]`, exact lower>upperはParse failureとなる。
+- [ ] rejected fixture `[+Infinity,1]`, `[1,-Infinity]`, `[Infinity]`, `[NaN,1]`, exact lower>upperはP4E-000で固定したParse error contractになる。
 - [ ] `TryParse`系は全rejected fixtureでfalse/out=Emptyとなる。
 - [ ] parserはInvariantCulture固定とし、`[1,5]`をlocale decimal 1.5として解釈せずlower=1/upper=5として扱う。
 - [ ] parser implementationにrecursive descent/self-recursive callを使用せず、nesting syntaxを受け入れない。
-- [ ] P4E-000で固定したmax input length/significand digits/exponent digitsについてlimit値はaccepted、limit+1はbounded failureとなる。
-- [ ] exception messageに入力全文を無制限に含めず、max excerpt lengthをP4E-000 decision recordの整数値以下にする。
+- [ ] P4E-000で固定したmax input length/significand digits/exponent digitsについて各limit値の入力はaccepted、limit+1はP4E-000で固定したerror contractとなる。
+- [ ] exception messageに入力全文を無制限に含めず、excerpt lengthはP4E-000で固定したmax exception excerpt length以下となる。
 - [ ] exact round-trip formatを採用した場合、format->parse後のcanonical endpoint bitsが元値と一致する。
 
 ## P4E-010 binary interchange
