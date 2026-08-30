@@ -8,23 +8,25 @@
 - 状態値: `未着手` / `進行中` / `Blocked` / `完了`
 
 本書は実装・検証をレビュー可能な論理単位へ分解したタスク一覧である。
-受け入れ条件は「実装した」ではなく、観測可能なtest、corpus、artifact、API baseline、benchmark等で完了を判定できる形で記載する。
+各受け入れ条件は、実装者が詳細設計本文を再解釈しなくても、入力、期待結果、例外、bit一致、artifact、review evidenceのいずれかで合否を判定できる形で記載する。
 
-## 2. 共通完了条件
+## 2. 共通判定規則
 
-source実装を含むタスクには、個別条件に加えて次を適用する。
+source実装を含むタスクには個別条件に加えて次を適用する。
 
-- [ ] TDDで失敗testを先に追加し、対象仕様を理由に失敗することを確認してからproduction implementationを追加する。
-- [ ] RedとGreenをレビュー可能な小さい論理単位でcommit/pushする。
-- [ ] Empty、signed zero、Infinity、subnormal、finite overflow等、対象機能に関係する境界値を決定的fixtureへ含める。
-- [ ] exact oracle / MPFR / pinned referenceのうち対象機能に適用可能なものと比較し、未承認差異を残さない。
-- [ ] Linux x64 / ARM64でcanonical resultが一致する。複数backendがある場合はbackend間でもcanonical endpoint bitsが一致する。
-- [ ] 失敗時にtest result、stdout、stderr、diagnostic log、および原因調査に必要な入力・分岐・reference情報をartifactから取得できる。
-- [ ] 対象PRのCIはPR current HEAD SHAとrunの`head_sha`が一致するrunだけを採用する。matching runがなければCI未実施とする。
-- [ ] 公開APIを変更した場合はAPI baselineを更新する。破壊的変更の場合は `doc/Design/BreakingChanges.md` に理由と移行方法を記録する。
-- [ ] 完了時に対象タスクのstatus、詳細report、PR上の簡易reportを更新する。
+- [ ] Red commitでは、追加したtest名、実行command、終了コード、失敗messageをreportへ記録し、対象仕様が未実装であることを理由に最低1件失敗する。
+- [ ] Green commitはRed commitより後の別commitとし、同じfocused test commandが終了コード0になる。
+- [ ] Red/Greenを含む各commitは1つの論理単位に限定し、無関係なcleanupを同じcommitへ含めない。
+- [ ] binary64 endpointの期待値は、NaN payloadをpublic contractにしない箇所を除き、`BitConverter.DoubleToInt64Bits`相当の64bit値でfixtureへ固定する。
+- [ ] exact oracle / MPFR / pinned referenceのうち対象taskで指定されたreferenceとの未承認差異は0件とする。
+- [ ] x64/ARM64比較対象taskでは、caseId順のcanonical result fileのSHA-256が一致する。
+- [ ] 複数backend比較対象taskでは、同一caseIdのcanonical endpoint bitsがbackend間で一致する。
+- [ ] failure artifact対象taskでは、失敗caseの`caseId`からinput、selected branch、expected、actual、referenceを1つのartifact set内で追跡できる。
+- [ ] public API変更taskではPublic API baseline差分を保存する。未承認破壊的変更がある場合はtaskを完了にしない。
+- [ ] CI証拠は確認時点のPR current HEAD SHAとworkflow runの`head_sha`が一致するrunだけを採用する。0件なら `CI未実施` とreportへ記録する。
+- [ ] task完了時はstatus、詳細report、PR簡易reportを更新する。
 
-infra/documentationのみのタスクにはTDDを要求しないが、内容の整合確認とレビュー可能なcommit単位は維持する。
+infra/documentation/review-gateのみのtaskはRed/Greenを要求しない。それ以外の条件は適用する。
 
 ## 3. タスクサマリー
 
@@ -44,7 +46,8 @@ infra/documentationのみのタスクにはTDDを要求しないが、内容の�
 | P1-010 | 1 | Phase 1 conformance harness | 未着手 | P1-002, P1-005, P1-007, P1-009 |
 | P1-011 | 1 | pinned inari/kv corpus・reference lock | 未着手 | P1-010 |
 | P1-012 | 1 | sample・API evaluation report | 未着手 | P1-011 |
-| P2-001 | 2 | core API review/freeze | 未着手 | P1-012 |
+| P1-013 | 1 | hot-path・NativeAOT・trimming final gate | 未着手 | P1-012 |
+| P2-001 | 2 | core API review/freeze | 未着手 | P1-013 |
 | P2-002 | 2 | conversion/generic math/format判断 | 未着手 | P2-001 |
 | P2-003 | 2 | public API baseline・breaking-change運用確定 | 未着手 | P2-002 |
 | P3-001 | 3 | scalar/SIMD differential・capability基盤 | 未着手 | P2-003 |
@@ -53,7 +56,8 @@ infra/documentationのみのタスクにはTDDを要求しないが、内容の�
 | P3-004 | 3 | AVX2+FMA mul/div candidate | 未着手 | P3-001 |
 | P3-005 | 3 | AVX2 no-FMA/SSE2/ARM64候補評価 | 未着手 | P3-001 |
 | P3-006 | 3 | production dispatch・fallback・benchmark gate | 未着手 | P3-002～P3-005 |
-| P4A-001 | 4A | Contains / IsBounded | 未着手 | P3-006 |
+| P4A-000 | 4A | Phase 4A implementation preflight | 未着手 | P3-006 |
+| P4A-001 | 4A | Contains / IsBounded | 未着手 | P4A-000 |
 | P4A-002 | 4A | Intersect / ConvexHull | 未着手 | P4A-001 |
 | P4A-003 | 4A | relation named API | 未着手 | P4A-002 |
 | P4A-004 | 4A | IntervalOverlap | 未着手 | P4A-003 |
@@ -61,25 +65,29 @@ infra/documentationのみのタスクにはTDDを要求しないが、内容の�
 | P4A-006 | 4A | Abs / Sign / pointwise min-max | 未着手 | P4A-005 |
 | P4A-007 | 4A | Floor/Ceiling/Truncate/Round | 未着手 | P4A-006 |
 | P4A-008 | 4A | Phase 4A API/conformance close | 未着手 | P4A-007 |
-| P4B-001 | 4B | tight IntervalConstants | 未着手 | P4A-008 |
+| P4B-000 | 4B | Phase 4B implementation preflight | 未着手 | P4A-008 |
+| P4B-001 | 4B | tight IntervalConstants | 未着手 | P4B-000 |
 | P4B-002 | 4B | Reciprocal | 未着手 | P4B-001 |
 | P4B-003 | 4B | Square | 未着手 | P4B-002 |
 | P4B-004 | 4B | Sqrt | 未着手 | P4B-003 |
 | P4B-005 | 4B | integer Pow / Root | 未着手 | P4B-004 |
 | P4B-006 | 4B | FusedMultiplyAdd | 未着手 | P4B-005 |
 | P4B-007 | 4B | MPFR corpus・elementary endpoint backend qualification | 未着手 | P4B-006 |
-| P4C-001 | 4C | Exp / Exp2 / Exp10 | 未着手 | P4B-007 |
+| P4C-000 | 4C | Phase 4C implementation preflight | 未着手 | P4B-007 |
+| P4C-001 | 4C | Exp / Exp2 / Exp10 | 未着手 | P4C-000 |
 | P4C-002 | 4C | Log / Log2 / Log10 | 未着手 | P4C-001 |
 | P4C-003 | 4C | Sinh / Cosh / Tanh | 未着手 | P4C-002 |
 | P4C-004 | 4C | Asinh/Acosh/Atanh/Asin/Acos/Atan | 未着手 | P4C-003 |
 | P4C-005 | 4C | Phase 4C backend/API gate | 未着手 | P4C-004 |
-| P4D-001 | 4D | high-precision periodic reducer | 未着手 | P4C-005 |
+| P4D-000 | 4D | Phase 4D implementation preflight | 未着手 | P4C-005 |
+| P4D-001 | 4D | high-precision periodic reducer | 未着手 | P4D-000 |
 | P4D-002 | 4D | Sin / Cos | 未着手 | P4D-001 |
 | P4D-003 | 4D | Tan | 未着手 | P4D-002 |
 | P4D-004 | 4D | Atan2 | 未着手 | P4D-003 |
 | P4D-005 | 4D | positive-base general interval Pow | 未着手 | P4D-004 |
 | P4D-006 | 4D | Phase 4D backend/API gate | 未着手 | P4D-005 |
-| P4E-001 | 4E | IntervalUnion2 | 未着手 | P4D-006 |
+| P4E-000 | 4E | Phase 4E implementation preflight | 未着手 | P4D-006 |
+| P4E-001 | 4E | IntervalUnion2 | 未着手 | P4E-000 |
 | P4E-002 | 4E | DivideToUnion | 未着手 | P4E-001 |
 | P4E-003 | 4E | ReciprocalToUnion | 未着手 | P4E-002 |
 | P4E-004 | 4E | ReverseMultiply | 未着手 | P4E-003 |
@@ -102,11 +110,11 @@ infra/documentationのみのタスクにはTDDを要求しないが、内容の�
 
 ### 受け入れ条件
 
-- [ ] 設計版5のimmutable HEADを明示してfix verificationを実施する。
-- [ ] `F-PR3-010`～`F-PR3-017`をfinding ID単位で再確認し、各findingのrequired actionと本文規範が対応している。
-- [ ] 新規blocking/high/medium/low findingがない、または全件修正後に同一reviewerによる必要なclosureを完了する。
-- [ ] review verdictとreviewed HEADを詳細reportへ保存する。
-- [ ] 詳細設計の状態が実装開始可能であることを確認できるまでPhase 1 source実装を開始しない。
+- [ ] review reportに `reviewed HEAD=<40桁SHA>` と対象file `doc/Design/detail/IntervalArithmetic.md` を記録する。
+- [ ] `F-PR3-010`～`F-PR3-017`を各finding IDごとに `required action / section / evidence / disposition` の4列で記録する。
+- [ ] verdictが `pass` で、`unresolved blocking/high/medium/low findings=0` と記録される。
+- [ ] review対象HEADとreport記載HEADが一致しない場合はpass扱いにしない。
+- [ ] matching current-HEAD workflow runが0件なら `CI未実施` と記録し、別SHA runを引用しない。
 
 ## P0-002 フェーズ・タスク管理基盤作成
 
@@ -114,12 +122,13 @@ infra/documentationのみのタスクにはTDDを要求しないが、内容の�
 
 ### 受け入れ条件
 
-- [ ] `tasks/phases-status.md` にPhase 0、1、2、3、4A～4Eが順序・依存関係付きで登録されている。
-- [ ] 各Phaseに目的、主対象、判定可能な完了条件がある。
-- [ ] `tasks/tasks-status.md` にPhase 1実装開始順序とPhase 4 TDD順序を漏れなく反映している。
-- [ ] 各実装タスクに、少なくとも機能結果、境界fixture、reference/oracle、architecture/backend整合性のうち適用対象となる具体条件が記載されている。
-- [ ] Phase 1最初のタスクにdiagnostic artifact workflow追加が必須として明記されている。
-- [ ] タスク一覧と詳細設計版5の間に対象機能の矛盾がない。
+- [ ] `tasks/phases-status.md` にPhase 0/1/2/3/4A/4B/4C/4D/4Eの9行が存在する。
+- [ ] `tasks/tasks-status.md` にPhase 1 §52.1の12実装項目、Phase 4 §44のTDD順序、Phase 4A～4Eのpreflight gateが存在する。
+- [ ] source taskの受け入れ条件に最低1つ、具体的な入力と期待結果、または実行commandとexit/output条件が記載される。
+- [ ] `P4A-001`, `P4B-001`, `P4C-001`, `P4D-001`, `P4E-001`の直接依存先が各`P4?-000`である。
+- [ ] `P1-001`に§16.4のfailure diagnostic fieldがすべて列挙される。
+- [ ] `P1-013`に§47のhot-path/NativeAOT/trimming条件が列挙される。
+- [ ] PR review finding `F-PR5-001`～`F-PR5-010`が本書末尾の対応表から各修正taskへ追跡できる。
 
 ---
 
@@ -131,29 +140,36 @@ infra/documentationのみのタスクにはTDDを要求しないが、内容の�
 
 ### 受け入れ条件
 
-- [ ] `net10.0` production projectとtest projectを含むsolutionがbuild可能である。
-- [ ] Linux x64 (`ubuntu-24.04`) とLinux ARM64 (`ubuntu-24.04-arm`) のCI jobが同一commit・同一test assembly・同一corpusを実行する。
-- [ ] workflowは成功/失敗を問わず `if: always()` 相当でtest result、stdout、stderr、diagnostic logをartifact化する。
-- [ ] artifactへruntime、OS、architecture、CPU features、reference-lock、conformance summary、canonical result corpusを含められる構造がある。
-- [ ] architecture比較jobがcaseId順の `canonical-results.jsonl` をbyte-for-byte比較し、SHA-256と全差分を保存できる。
-- [ ] test failure時に、該当caseIdと入力をartifactから特定できる最小diagnostic形式を定義する。
-- [ ] 実行可能projectが追加された最初のPR内でこのworkflowも同時に追加される。
+- [ ] solutionに`net10.0` production projectとtest projectが含まれ、`dotnet build`と`dotnet test`が終了コード0となる。
+- [ ] workflow matrixに `runs-on: ubuntu-24.04` x64 と `runs-on: ubuntu-24.04-arm` ARM64の2 jobがあり、同一commit・同一test assembly・同一reference corpusを実行する。
+- [ ] test commandのstdoutとstderrを別fileへ保存し、test result fileも保存する。
+- [ ] artifact upload stepはsuccess/failure双方で実行される `if: always()` 相当の条件を持つ。
+- [ ] artifactには `test result / stdout / stderr / diagnostic log / runtime / OS / architecture / CPU features / reference-lock / conformance summary / canonical-results.jsonl` が含まれる。
+- [ ] 数値case diagnostic entryは最低限 `caseId`, `inputBits`, `selectedBranch`, `exactResult`, `devo6ResultBits`, `inariResult`, `kvResult`, `mpfrResult`, `expectedDifferenceReason` のfieldを持つ。
+- [ ] reference未導入時は空欄にせず文字列 `N/A` を保存する。
+- [ ] `expectedDifferenceReason`は通常一致caseで`null`、承認差異caseだけ非nullとする。
+- [ ] x64/ARM64各jobがcaseId順`canonical-results.jsonl`を生成し、比較jobがbyte-for-byte diffとSHA-256をartifactへ保存する。
+- [ ] failure sample entryとして `caseId=diagnostic-probe-001` 相当のfixtureを用意し、artifactからinput、branch、expected、actualを一意に特定できることを確認する。
 
 ## P1-002 Interval construction/state/normalization
 
-**設計参照:** §5, §6, §12, §14.2～14.4
+**設計参照:** §5, §6, §12
 
 ### 受け入れ条件
 
-- [ ] `public readonly struct Interval : IEquatable<Interval>` が成立する。
-- [ ] `default(Interval) == Interval.Zero` がtrueで、Zero公開endpointはlower `-0.0`、upper `+0.0`へcanonicalizeされる。
-- [ ] `Interval.Empty.Lower == +Infinity`、`Interval.Empty.Upper == -Infinity`、`Interval.Entire == [-Infinity,+Infinity]`をfixtureで確認する。
-- [ ] constructorは`lower > upper`、NaN endpoint、lower `+Infinity`、upper `-Infinity`を`ArgumentException`で拒否する。
-- [ ] `TryCreate`は同じinvalid matrixで`false`かつout=`Interval.Empty`を返す。
-- [ ] `Point`は有限`double`だけを受け入れ、NaN/±Infinityを拒否する。
-- [ ] `IsEmpty`、`IsEntire`、`IsSingleton`がEmpty/Entire/finite singleton/zero variants/unbounded matrixを満たす。
-- [ ] Empty同士のequality、signed-zero入力差を無視するnonempty equality、固定Empty Hash、canonical zero Hashを検証する。
-- [ ] public APIからprivate layoutやNaN payloadを観測できない。
+- [ ] `[1,2]`の内部論理stateが`[-1,2]`、`[-2,-1]`が`[+2,-1]`であることをinternal test/assertionで確認する。
+- [ ] `Interval.Empty`は内部2 laneの両方が同一repository-defined canonical qNaN stateで、片側だけNaNのraw stateはinternal validationで失敗する。
+- [ ] `default(Interval) == Interval.Zero` がtrueで、Zeroのpublic Lower bits=`0x8000000000000000`、Upper bits=`0x0000000000000000`となる。
+- [ ] `Interval.Empty.Lower`は`+Infinity`、`Upper`は`-Infinity`を返す。
+- [ ] `Interval.Entire`は`[-Infinity,+Infinity]`、`IsEntire=true`となる。
+- [ ] constructor成功fixture `(-1,1)`, `(-Inf,1)`, `(-1,+Inf)`, `(-Inf,+Inf)` が期待区間を返す。
+- [ ] constructor失敗fixture `(NaN,1)`, `(0,NaN)`, `(1,-1)`, `(-Inf,-Inf)`, `(+Inf,+Inf)` は`ArgumentException`となる。
+- [ ] 同じ失敗fixtureの`TryCreate`は`false`かつ`out=Interval.Empty`となる。
+- [ ] `Point(1)`は`[1,1]`、`Point(NaN)`, `Point(+Inf)`, `Point(-Inf)`は拒否される。
+- [ ] Empty同士はequal、zero signed-bit入力差はcanonical equality/hashへ影響せず、equal値は同じhashを返す。
+- [ ] raw result constructor経由でZero/Entire/Empty/normal区間を生成した後もpublic invariantが成立し、operator実装からpublic validating constructorを呼ばない。
+- [ ] `ToString()`はEmpty、Entire、`[1,2]`で例外を送出せず非空文字列を返し、round-trip/永続化保証はtest名・API docで要求しない。
+- [ ] public APIからprivate field順序、physical size、qNaN payload、SIMD型を取得する契約を追加しない。
 
 ## P1-003 exact-rational oracle・boundary corpus
 
@@ -161,13 +177,14 @@ infra/documentationのみのタスクにはTDDを要求しないが、内容の�
 
 ### 受け入れ条件
 
-- [ ] 任意のfinite binary64をexactな `significand * 2^exponent` へ分解できる。
-- [ ] add/sub/mulは`BigInteger` exact value、divはexact rational numerator/denominatorとして比較できる。
-- [ ] positive finite overflowでUp=`+Infinity`、Down=`+MaxValue`、negative finite overflowでUp=`-MaxValue`、Down=`-Infinity`をoracleが返す。
-- [ ] finite overflowとInfinity operand由来のexact Infinityを別caseとして記録する。
-- [ ] `-M <= R <= M`ではnearest finite resultをexact rationalへ戻してBitIncrement/BitDecrement要否を判定する。
-- [ ] threshold bits `2^-969` previous/exact/next、`2^918` previous/exact/next、minimum subnormalを固定fixtureとして保持する。
-- [ ] oracle実装はtest/reference側にのみ存在し、production packageへ`BigInteger`を持ち込まない。
+- [ ] finite binary64を`significand * 2^exponent`へexact分解し、`1.0`, `-0.0`, min subnormal, MaxValueのround-trip bitsが一致する。
+- [ ] add/sub/mul oracleは`BigInteger` exact value、div oracleはexact rational numerator/denominatorを使用する。
+- [ ] positive finite overflow `R > MaxValue`でUp=`+Infinity`, Down=`+MaxValue`、negative finite overflow `R < -MaxValue`でUp=`-MaxValue`, Down=`-Infinity`となる。
+- [ ] operand自体がInfinityのcaseとfinite exact result overflowを別caseId/branchとして記録する。
+- [ ] `2^-969` previous/exact/next bits=`0x035fffffffffffff/0x0360000000000000/0x0360000000000001`をfixtureへ固定する。
+- [ ] `2^918` previous/exact/next bits=`0x794fffffffffffff/0x7950000000000000/0x7950000000000001`をfixtureへ固定する。
+- [ ] min subnormal bits=`0x0000000000000001`をfixtureへ固定する。
+- [ ] production projectからoracle implementation/`BigInteger` test helperへのruntime referenceが0件である。
 
 ## P1-004 directed add/sub primitive
 
@@ -175,12 +192,13 @@ infra/documentationのみのタスクにはTDDを要求しないが、内容の�
 
 ### 受け入れ条件
 
-- [ ] `AddUp` / `AddDown`がfinite non-overflow入力でTwoSum residualに基づき必要時だけ隣接doubleへ補正する。
-- [ ] exact resultの場合は無条件に1 ULP広げない。
-- [ ] `SubtractUp/Down`が設計のsymmetryに従う。
-- [ ] finite overflowの4方向結果がexact oracleと一致する。
-- [ ] primitiveへ渡してはいけないNaN、`+Infinity + -Infinity`等をcaller contract/testで明示する。
-- [ ] randomized finite corpusと決定的tie/overflow fixtureでexact oracleとの差異が0件である。
+- [ ] finite non-overflow `TwoSum(x,y)`が `s=RN(x+y)` と `e=exact(x+y)-s`を返すfixtureをexact oracleと比較する。
+- [ ] `AddUp`: `e>0 -> BitIncrement(s)`、`e<=0 -> s` を固定witnessで確認する。
+- [ ] `AddDown`: `e<0 -> BitDecrement(s)`、`e>=0 -> s` を固定witnessで確認する。
+- [ ] exact addition witnessではUp/Downとも`BitIncrement/BitDecrement`なしで`s`を返す。
+- [ ] `SubtractUp(x,y)=AddUp(x,-y)`、`SubtractDown(x,y)=AddDown(x,-y)`のcanonical bitsがexact oracleと一致する。
+- [ ] positive/negative finite overflowのUp/Down結果がP1-003のoverflow ruleと一致する。
+- [ ] undefined pair `+Inf + -Inf`をprimitiveへ渡すpublic pathが0件である。
 
 ## P1-005 interval add/sub/unary minus
 
@@ -188,25 +206,29 @@ infra/documentationのみのタスクにはTDDを要求しないが、内容の�
 
 ### 受け入れ条件
 
-- [ ] いずれかoperandがEmptyならadd/sub結果はEmpty、unary minusのEmptyはEmptyである。
-- [ ] `[a,b]+[c,d] = [RD(a+c),RU(b+d)]`を満たす。
-- [ ] `[a,b]-[c,d] = [RD(a-d),RU(b-c)]`を満たす。
-- [ ] `-[a,b]=[-b,-a]`を満たし、double negationで元のcanonical intervalへ戻る。
-- [ ] Zero identity、add commutativity、result invariantのproperty testが成功する。
-- [ ] unbounded intervalとsigned-zero endpointを含むfixtureがexact oracle/referenceと一致する。
+- [ ] `[1,2]+[3,4]`が`[RD(4),RU(6)]=[4,6]`となる。
+- [ ] `[1,2]-[3,4]`が`[RD(-3),RU(-1)]=[-3,-1]`となる。
+- [ ] `-[1,2]=[-2,-1]`、`-Empty=Empty`、`-Entire=Entire`となる。
+- [ ] operandのいずれかがEmptyならadd/sub結果はEmptyとなる。
+- [ ] zero endpointを含む結果でlower zero bits=`-0.0`、upper zero bits=`+0.0`へcanonicalizeされる。
+- [ ] internal add結果はlowerを外部表現へ戻して再格納せず、negated-lower stateのまま生成されることをinternal testで確認する。
+- [ ] exact oracle corpus全caseでendpoint bitsが一致する。
 
 ## P1-006 directed multiply primitive
 
-**設計参照:** §9, §15
+**設計参照:** §7, §9, §15
 
 ### 受け入れ条件
 
-- [ ] `abs(product) >= 2^-969`でFMA residual通常経路、`abs(product) < 2^-969`でscaled経路を使用する。
-- [ ] `2^-969` previous/exact/nextで経路境界が設計どおり選択される。
-- [ ] scaled pathの`t<s`、`t>s`、`t==s && s2>0`、`t==s && s2<0`、exactを固定binary64 witnessで検証する。
-- [ ] positive/negative finite overflowのUp/Down結果がexact oracleと一致する。
-- [ ] Infinity operandはfinite overflowと別分岐で扱い、`0 * Infinity`をprimitiveへ渡さない。
-- [ ] randomized finite corpusでMultiplyUp/Downとexact oracleの差異が0件である。
+- [ ] `abs(product)>=2^-969`の通常経路で`error=FMA(x,y,-product)`を使用するfixtureを持つ。
+- [ ] 通常経路Upは`error>0 -> BitIncrement(product)`、それ以外`product`、Downは`error<0 -> BitDecrement(product)`、それ以外`product`となる。
+- [ ] `abs(product)<2^-969`のscaled経路は`ProductScale=2^537`を使用する。
+- [ ] scaled Upは `t<s` または `t==s && s2>0` のwitnessで`BitIncrement(product)`、それ以外`product`となる。
+- [ ] scaled Downは `t>s` または `t==s && s2<0` のwitnessで`BitDecrement(product)`、それ以外`product`となる。
+- [ ] `t==s && s2==0` witnessはUp/Downとも無補正で`product`を返す。
+- [ ] fixed witnessを `t<s`, `t>s`, `t==s&&s2>0`, `t==s&&s2<0`, exact の5 caseIdで保存し、input bitsとexpected output bitsをfixtureへ固定する。
+- [ ] positive overflowはUp=`+Inf`, Down=`+MaxValue`、negative overflowはUp=`-MaxValue`, Down=`-Inf`となる。
+- [ ] `0*Infinity`, NaN operandをdirected primitiveへ渡すpublic pathが0件である。
 
 ## P1-007 interval multiplication
 
@@ -214,38 +236,57 @@ infra/documentationのみのタスクにはTDDを要求しないが、内容の�
 
 ### 受け入れ条件
 
-- [ ] Z/P/N/M sign classの全組合せが設計表どおりのendpoint候補を選ぶ。
-- [ ] Zero classを最初に処理し、`0 * Infinity`をdirected primitiveへ渡さない。
-- [ ] M×Mはlowerに`min(RD(a*d),RD(b*c))`、upperに`max(RU(a*c),RU(b*d))`を使用する。
-- [ ] mul commutativity、Zero multiplication、result invariantのproperty testが成功する。
-- [ ] finite/unbounded/subnormal/overflowを含む決定的matrixがexact oracleおよびcompatibleなreference resultと一致する。
+- [ ] sign classを `Z=[0,0]`, `P=0<=lowerかつ非Z`, `N=upper<=0かつ非Z`, `M=lower<0<upper` の4classへ分類する。
+- [ ] Z×任意、任意×ZはZeroを返し、`0*Infinity`をprimitiveへ渡さない。
+- [ ] P×P: lower=`RD(a*c)`, upper=`RU(b*d)`。
+- [ ] P×N: lower=`RD(b*c)`, upper=`RU(a*d)`。
+- [ ] P×M: lower=`RD(b*c)`, upper=`RU(b*d)`。
+- [ ] N×P: lower=`RD(a*d)`, upper=`RU(b*c)`。
+- [ ] N×N: lower=`RD(b*d)`, upper=`RU(a*c)`。
+- [ ] N×M: lower=`RD(a*d)`, upper=`RU(a*c)`。
+- [ ] M×P: lower=`RD(a*d)`, upper=`RU(b*d)`。
+- [ ] M×N: lower=`RD(b*c)`, upper=`RU(a*c)`。
+- [ ] M×M: lower=`min(RD(a*d),RD(b*c))`, upper=`max(RU(a*c),RU(b*d))`。
+- [ ] 4×4 class matrixの各row/columnに最低1 fixtureを持ち、exact oracle endpoint bitsと一致する。
+- [ ] Empty operandはEmptyを返す。
 
 ## P1-008 directed divide primitive
 
-**設計参照:** §10, §15
+**設計参照:** §7, §10, §15
 
 ### 受け入れ条件
 
-- [ ] denominatorを正符号化した後にresidual比較を行う。
-- [ ] `abs(x) < 2^-969`のsmall numerator経路と`abs(y) >= 2^918`のlarge-denominator early return境界を固定fixtureで検証する。
-- [ ] early returnはpositive exact quotientでUp=`+2^-1074`/Down=`+0.0`、negativeでUp=`+0.0`/Down=`-2^-1074`を返す。
-- [ ] `r==xn && r2>0`、`r==xn && r2<0`、`r<xn`、`r>xn`、exactの全caseを固定witnessで検証する。
-- [ ] denominator zero、0/0、Infinity/Infinity、NaNをprimitiveへ渡さない。
-- [ ] positive/negative finite overflowとrandomized finite corpusがexact oracleと一致する。
+- [ ] denominatorを正符号化し、内部比較時は`yn>0`を満たす。
+- [ ] `abs(xn)<2^-969 && abs(yn)<2^918`は`DivisionScale=2^105`でxn/yn双方をscaleする。
+- [ ] `abs(xn)==2^-969`はnormal path、`abs(yn)==2^918`はlarge-denominator early-return側へ入る固定fixtureを持つ。
+- [ ] positive exact quotientのlarge-denominator early returnはUp=`+2^-1074`, Down=`+0.0`となる。
+- [ ] negative exact quotientのlarge-denominator early returnはUp=`+0.0`, Down=`-2^-1074`となる。
+- [ ] normal pathで`q=RN(xn/yn)`, `r=RN(q*yn)`, `r2=FMA(q,yn,-r)`を記録するfixtureを持つ。
+- [ ] DivideUpは `r<xn` または `r==xn && r2<0` なら`BitIncrement(q)`、それ以外`q`となる。
+- [ ] DivideDownは `r>xn` または `r==xn && r2>0` なら`BitDecrement(q)`、それ以外`q`となる。
+- [ ] `r==xn && r2==0` exact witnessはUp/Downとも無補正で`q`を返す。
+- [ ] `r<xn`, `r>xn`, `r==xn&&r2<0`, `r==xn&&r2>0`, exact の5 caseIdでinput/expected bitsを固定する。
+- [ ] positive/negative finite overflowはP1-003 ruleと一致する。
+- [ ] denominator zero、`0/0`, `Inf/Inf`, NaN operandをprimitiveへ渡すpublic pathが0件である。
 
 ## P1-009 interval division
 
-**設計参照:** §11.4～11.7
+**設計参照:** §11.4～§11.7
 
 ### 受け入れ条件
 
-- [ ] Empty operandを伝播する。
-- [ ] denominatorがstrict positive/strict negativeの場合、numerator Z/P/N/Mの各式が設計表と一致する。
-- [ ] `A/[0,0] -> Empty`、`Zero/[0,d] -> Zero`、`Zero/[c,0] -> Zero`を満たす。
-- [ ] one-sided zero denominator `[0,d]` / `[c,0]`でZ/P/N/Mの結果matrixを全件fixture化する。
-- [ ] strict zero-crossing denominatorで`Zero/B -> Zero`、それ以外はbare hullとしてEntireを返す。
-- [ ] reciprocalを一度作って乗算する二重丸め実装を採用しない。
-- [ ] `[1,2]/[0,0] -> Empty`、`[1,2]/[-1,1] -> Entire`等の代表fixtureが設計どおりである。
+- [ ] denominator positive `0<c<=d`でP/N/M各classのendpoint式を固定fixtureでpassする。
+- [ ] denominator negative `c<=d<0`でP/N/M各classのendpoint式を固定fixtureでpassする。
+- [ ] `[1,2]/[0,0]=Empty`, `[0,0]/[0,0]=Empty`となり`DivideByZeroException`を送出しない。
+- [ ] `Zero/[0,d]=Zero`, `Zero/[c,0]=Zero`, `Zero/[c,d]` with `c<0<d` = Zeroとなる。
+- [ ] `[1,2]/[0,2]=[RD(1/2),+Infinity]`となる。
+- [ ] `[-2,-1]/[0,2]=[-Infinity,RU(-1/2)]`となる。
+- [ ] `[1,2]/[-2,0]=[-Infinity,RU(1/-2)]`となる。
+- [ ] `[-2,-1]/[-2,0]=[RD(-1/-2),+Infinity]`となる。
+- [ ] numerator Mかつone-sided zero denominatorはEntireとなる。
+- [ ] strict zero-crossing denominator `c<0<d`はnumerator ZeroならZero、それ以外Entireとなる。
+- [ ] reciprocalを一度構築してmultiplyする実装経路をbasic divisionから使用しない。
+- [ ] Empty operandはEmptyとなる。
 
 ## P1-010 Phase 1 conformance harness
 
@@ -253,37 +294,55 @@ infra/documentationのみのタスクにはTDDを要求しないが、内容の�
 
 ### 受け入れ条件
 
-- [ ] Empty/Entire/numsToInterval/inf/sup/isEmpty/isEntire/isSingleton/equal/neg/add/sub/mul/divをrequired matrixへ登録する。
-- [ ] ITF1788の固定commitからconstructor/element/bool等の指定sourceを抽出する。
-- [ ] `IsSingleton`はrepository-defined matrixを明示的sourceとして扱う。
-- [ ] 各caseにsource、path/testcase、adaptation、required/deferred/excluded/approved-deviation、expectedを保存する。
-- [ ] 宣言operationのsource extraction件数が0件の場合、passではなくsource extraction errorで失敗する。
-- [ ] required caseが全件成功し、conformance summaryをartifactへ保存する。
+- [ ] manifestに `empty, entire, numsToInterval, inf, sup, isEmpty, isEntire, isSingleton, equal, neg, add, sub, mul, div` の14 conceptがrequiredとして存在する。
+- [ ] ITF1788 source extractionで宣言operationが0件ならtest successではなく`source extraction error`で終了コード非0となる。
+- [ ] constructor fixture `(-1,1)`, `(-Inf,1)`, `(-1,+Inf)`, `(-Inf,+Inf)`が成功する。
+- [ ] constructor fixture `(NaN,NaN)`, `(1,-1)`, `(-Inf,-Inf)`, `(+Inf,+Inf)`がinvalidとしてconstructor=`ArgumentException`, TryCreate=`false/out=Empty`となる。
+- [ ] IsSingleton matrixでEmpty=false, Entire=false, `[1,1]`=true, `[-2,-2]`=true, Zero=true, `[1,2]`=false, `[-Inf,2]`=false, `[1,+Inf]`=falseとなる。
+- [ ] `inf(Empty)=+Infinity`, `sup(Empty)=-Infinity`を確認する。
+- [ ] manifest各caseに `source/path/testcase/adaptation/status/expected` が存在し、required/deferred/excluded/approved-deviationを区別する。
+- [ ] required case failure数が0となる。
 
 ## P1-011 pinned inari/kv corpus・reference lock
 
-**設計参照:** §2.1, §13.3, §13.4, §49
+**設計参照:** §13.3, §13.4
 
 ### 受け入れ条件
 
-- [ ] `reference-lock.json`にinari SHA、kv SHA、ITF1788 SHA、adapter/generator hash、toolchain/target triple、generator command、corpus SHA-256、license/NOTICE pathを記録する。
-- [ ] corpusはJSON Lines、binary64数値は16桁hex bits、caseId sortで生成する。
-- [ ] generator iteration orderを変更してもcaseId sort後のcorpus bytesが同じである。
-- [ ] inariはinterval semantics/reference、kvはcompatible directed primitive referenceとして役割を分離する。
-- [ ] kvのzero-containing interval divisionをoracleとして使用しない。
-- [ ] third-party code/testを翻案した箇所はcommit SHAとMIT notice等の出典要件を満たす。
+- [ ] `tests/ReferenceData/reference-lock.json`にinari SHA=`18b83a...`, kv SHA=`c7f8f...`, ITF1788 SHA=`d8c2a...`, MPFR versionまたは`N/A`を保存する。
+- [ ] lockにadapter/generator hash、toolchain/target triple、generator command、corpus SHA-256、license/NOTICE pathを保存する。
+- [ ] corpusはJSON Lines、caseId昇順、binary64値は16桁hex bitsで保存する。
+- [ ] generatorを同一lock条件で2回実行し、corpus SHA-256が一致する。
+- [ ] kvのzero-containing interval division resultをoracleとして使用するcaseが0件である。
+- [ ] exact oracleとadopted semanticsがreference libraryと異なるcaseは`expectedDifferenceReason`を必須とする。
 
 ## P1-012 sample・API evaluation report
 
-**設計参照:** §3.3, §5.9, §5.10, §46, §50, §52.1
+**設計参照:** §5, §46, §52.1
 
 ### 受け入れ条件
 
-- [ ] constructor、Point、Empty/Entire、四則operatorを使うrepresentative sampleを作成する。
-- [ ] invalid inputと数学的Empty resultの違いがsampleから明確に理解できる。
-- [ ] basic四則演算のheap allocation 0をbenchmarkまたはallocation計測で確認する。
-- [ ] namespace、constructor vs factory-only、scalar overload/conversion、generic math、正式formatの未確定事項ごとに採否判断材料をreport化する。
-- [ ] Phase 1のcorrectness、conformance、x64/ARM64 corpus一致、known limitationを1つのevaluation reportへまとめる。
+- [ ] public APIだけで `new Interval(1,2)+Interval.Point(3)` を実行し結果 `[4,5]`をassertするsampleがある。
+- [ ] public APIだけで `new Interval(1,2)/new Interval(-1,1)` を実行し`IsEntire=true`、例外なしをassertするsampleがある。
+- [ ] `new Interval(2,1)` が`ArgumentException`となり、`Interval.Empty`生成経路と区別されるsample/testがある。
+- [ ] sample codeからinternal namespace、raw constructor、SIMD/backend型、reference adapterへの参照が0件である。
+- [ ] reportに上記3scenarioのsource path、command、actual result、pass/failを記録する。
+- [ ] reportにPhase 2で決定が必要な `namespace / constructor-vs-factory / scalar conversion / generic math / formal format` の5項目を列挙する。
+
+## P1-013 hot-path・NativeAOT・trimming final gate
+
+**設計参照:** §47
+
+### 受け入れ条件
+
+- [ ] BenchmarkDotNetでbasic `+`, `-`, `*`, `/` のAllocated columnが全て`0 B`となる。
+- [ ] JIT disassemblyまたはDisassemblyDiagnoserでbasic operator pathにinterface dispatch、delegate invoke、virtual indirect dispatchが存在しないことをevidence fileへ保存する。
+- [ ] production source/ILにreflection、`System.Reflection.Emit`、dynamic assembly generation、runtime code generation、native resolver登録を使用するpathが0件である。
+- [ ] Linux x64で `dotnet publish -c Release -r linux-x64 -p:PublishAot=true` が成功し、publish binaryのbasic 3scenario smokeが終了コード0となる。
+- [ ] Linux ARM64でもNativeAOT publish/smokeが終了コード0となる。
+- [ ] `PublishTrimmed=true` publishでbasic 3scenario smokeが終了コード0となる。
+- [ ] operator disassembly/call graphでpublic validating constructor呼出しがなく、internal raw result constructionを使用することを確認する。
+- [ ] production hot pathに`BigInteger`呼出しが0件、global floating-point rounding mode変更callが0件である。
 
 ---
 
@@ -291,15 +350,15 @@ infra/documentationのみのタスクにはTDDを要求しないが、内容の�
 
 ## P2-001 core API review/freeze
 
-**設計参照:** §3.3, §5, §46
+**設計参照:** §5, §46
 
 ### 受け入れ条件
 
-- [ ] assembly/package/namespace、constructor/factory、基本property、定数、四則operator、equality/Hash、例外、signed zeroをreviewで確定する。
-- [ ] representative sampleが過度なfactory呼出しやbackend依存なしで記述できる。
-- [ ] `Interval` public surfaceがinternal negated-lower layoutやSIMD型に依存しない。
-- [ ] Phase 1 fixture/conformance結果を変更せずにAPIを確定できる。
-- [ ] 基本API freezeのreview記録と確定日/対象HEADを保存する。
+- [ ] API decision recordにassembly/package、namespace、`Interval` type、constructor/factory、Lower/Upper、state properties/constants、operators、equality/hash、exception、signed-zero、ToStringの各項目を単一決定として記録し`TBD`を0件にする。
+- [ ] compile fixtureでP1-012の3scenarioが変更なしでpassする。
+- [ ] `Interval.Empty.Lower=+Inf`, `Upper=-Inf`, `default(Interval)==Zero`がAPI freeze fixtureでpassする。
+- [ ] normal comparison operator `< <= > >=` がpublic baselineに存在しない。
+- [ ] review reportにpublic API diffを添付し、unresolved API finding=0かつverdict=passとなる。
 
 ## P2-002 conversion/generic math/format判断
 
@@ -307,10 +366,11 @@ infra/documentationのみのタスクにはTDDを要求しないが、内容の�
 
 ### 受け入れ条件
 
-- [ ] scalar implicit/explicit conversion、scalar overloadの採否を決定し、採用時は曖昧性とrounding semanticsをtestで固定する。
-- [ ] `INumber<TSelf>`等generic math interfaceの採否を、全順序がないことを含む契約適合性で判断する。
-- [ ] diagnostic `ToString`と将来のpersistent/wire formatを混同しないsurfaceを確定する。
-- [ ] 不採用項目も理由を設計/decision記録へ残し、後続Phaseが再判断を暗黙に行わない。
+- [ ] scalar implicit/explicit conversionを`Adopt`または`Reject`の1値で記録する。
+- [ ] Adoptならexact C# signatureと成功/失敗fixtureを記載し、Rejectならbaselineにconversion operatorが0件であることをtestする。
+- [ ] `INumber<TSelf>`等generic math interfaceを`Adopt`または`Reject`で記録し、Adoptなら区間に自然な全順序がない点を満たすcontract testを添付する。
+- [ ] diagnostic `ToString`と永続化formatを同一契約にするか分離するかを1値で記録し、formal formatを採用する場合はround-trip fixtureを追加する。
+- [ ] 3項目すべてにdecision owner/date/rationale/test pathがあり`TBD`が0件となる。
 
 ## P2-003 public API baseline・breaking-change運用確定
 
@@ -318,11 +378,11 @@ infra/documentationのみのタスクにはTDDを要求しないが、内容の�
 
 ### 受け入れ条件
 
-- [ ] public API baseline fileをrepositoryへ保存する。
-- [ ] CIまたは明示検証でbaseline差分を検出できる。
-- [ ] Empty/Entire/invalid constructor/signed zero/四則fixture/exact oracle/conformance/x64-ARM64一致がfreeze HEADで成功する。
-- [ ] basic operation allocation 0がfreeze HEADで成功する。
-- [ ] Phase 2後の破壊的変更は `doc/Design/BreakingChanges.md` 更新なしでは受け入れない運用を明文化する。
+- [ ] public API baseline fileをrepositoryに保存し、CI/local gateでbaseline差分0を確認するcommandを記録する。
+- [ ] public APIを1 signature変更したnegative fixture/validationでbaseline gateが終了コード非0になることを確認する。
+- [ ] `doc/Design/BreakingChanges.md` entry templateに `old signature / new signature / reason / migration example / version` の5 fieldを定義する。
+- [ ] unapproved baseline差分がある状態ではPhase 3 taskを開始不可とする依存関係を文書化する。
+- [ ] final API baseline commit SHAをreportへ記録する。
 
 ---
 
@@ -334,47 +394,47 @@ infra/documentationのみのタスクにはTDDを要求しないが、内容の�
 
 ### 受け入れ条件
 
-- [ ] scalar reference backendを常時選択できるtest hookがある。
-- [ ] SIMD backendとの同一入力differentialをcaseId単位で比較できる。
-- [ ] `Avx512F`、`Avx2`、`Avx`、`Fma`、`Sse2`、`AdvSimd.Arm64`を独立判定する。
-- [ ] feature combinationを強制/模擬してfallback選択を検証できるtest構造がある。
-- [ ] mismatch artifactにscalar bits、SIMD bits、selected capability pathを保存する。
+- [ ] capability modelに`Avx512F`, `Avx2`, `Avx`, `Fma`, `Sse2`, `AdvSimd.Arm64`の6独立flagが存在する。
+- [ ] test seamで`Avx2=true/Fma=false`と`Avx2=false/Fma=true`を別々に表現できる。
+- [ ] scalar referenceとcandidate backendへ同一input corpusを渡し、caseIdごとにendpoint bit diffを出力できる。
+- [ ] diff 1件を注入したnegative fixtureでgateが終了コード非0となり、caseId/expected/actual/backendをartifactへ出す。
+- [ ] fallback backend名をdiagnostic logへ記録できる。
 
 ## P3-002 SIMD layout/load/store/batch add-sub
 
-**設計参照:** §17.3, §17.4
+**設計参照:** §17.3
 
 ### 受け入れ条件
 
-- [ ] batch layout `[-L0,U0,-L1,U1,...]`をbackend内部で実装し、public layout contractにはしない。
-- [ ] load/storeでEmpty/Entire/Zero/normal intervalのcanonical stateが壊れない。
-- [ ] batch add/subがscalar resultと全caseでbitwise一致する。
-- [ ] AVX-512の4 interval batchで末尾4未満が正しいfallbackへ流れる。
-- [ ] basic/special/subnormal corpusでdifferential mismatchが0件である。
+- [ ] 4 interval AVX-512 layoutを`[-L0,U0,-L1,U1,-L2,U2,-L3,U3]`の8 lane順で固定する。
+- [ ] `[1,2],[-3,4],[0,0],Entire`をload/storeしexternal endpoint bitsが元入力と一致する。
+- [ ] batch Add/SubをN=`1,2,3,4,5,7,8,32`でscalar referenceと比較し全endpoint bits一致する。
+- [ ] N%4=1/2/3のtailをscalarで処理し、out-of-range read/writeがないことをboundary testで確認する。
+- [ ] Emptyを含むbatchで対応elementだけEmptyが伝播し、隣接elementを汚染しない。
 
 ## P3-003 AVX-512 directed mul/div candidate
 
-**設計参照:** §17.2～17.4
+**設計参照:** §17.2～§17.4
 
 ### 受け入れ条件
 
-- [ ] AVX-512F available環境でpacked directed mul/div candidateを実装する。
-- [ ] Empty/zero-containing division/Infinity等の区間level special caseはscalar semanticsと一致する。
-- [ ] threshold/subnormal/finite overflow fixtureでscalar canonical bitsと一致する。
-- [ ] AVX-512F unavailable時にこのpathへ到達しない。
-- [ ] benchmarkはscalar baselineと同一workload/同一corpusで取得する。
+- [ ] AVX-512F supported時だけcandidateを選択し、unsupported時はcandidate entryを実行しない。
+- [ ] packed directed roundingでmul/divのlower/upperを計算し、scalar referenceとnormal/subnormal/overflow/Infinity/zero-containing interval corpusでbitwise一致する。
+- [ ] 4 interval batchとtail N=1～3の両方でbitwise一致する。
+- [ ] correctness mismatchが1件でもあればcandidate status=`rejected_correctness`としproduction dispatchへ登録しない。
+- [ ] candidate result reportにCPU feature、commit SHA、corpus SHA-256、mismatch countを記録する。
 
 ## P3-004 AVX2+FMA mul/div candidate
 
-**設計参照:** §17.2
+**設計参照:** §17.2, §17.4
 
 ### 受け入れ条件
 
-- [ ] AVX2とFMAを独立featureとして確認し、両方available時だけcandidateを選択する。
-- [ ] vector TwoSum add/subとFMA residual mul/div candidateがscalar canonical bitsと一致する。
-- [ ] AVX2 available/FMA unavailable環境でFMA pathを誤選択しないfixtureがある。
-- [ ] special/subnormal/overflow corpusでdifferential mismatchが0件である。
-- [ ] benchmark改善が測定可能な形で記録される。
+- [ ] candidate選択条件が`Avx2.IsSupported && Fma.IsSupported`相当である。
+- [ ] vector FMA residual pathのmul/divがscalar directed primitiveとnormal/subnormal/overflow/threshold corpusでbitwise一致する。
+- [ ] FMA=true/AVX2=false test seamではこのcandidateを選択しない。
+- [ ] mismatch 0件の場合のみstatus=`qualified_correctness`、1件以上なら`rejected_correctness`とする。
+- [ ] performance採否は本taskで決めずP3-006の事前固定benchmark gateだけで決める。
 
 ## P3-005 AVX2 no-FMA/SSE2/ARM64候補評価
 
@@ -382,29 +442,45 @@ infra/documentationのみのタスクにはTDDを要求しないが、内容の�
 
 ### 受け入れ条件
 
-- [ ] AVX2 no-FMAではadd/sub vector pathとmul/div scalar fallbackが正しく動作する。
-- [ ] SSE2 no-FMAではVector128 add/sub candidateとmul/div scalar fallbackが正しく動作する。
-- [ ] ARM64 AdvSimd candidateはcorrectness proof/differentialが成立したoperationだけをvector化する。
-- [ ] AVX+FMA without AVX2を独立feature combinationとして評価する。
-- [ ] 各pathでscalar canonical bitsとのdifferential mismatchが0件である。
-- [ ] vector化しないoperationも「未実装」ではなく正しいscalar fallbackを使用する。
+- [ ] `AVX2=true,FMA=false`ではadd/sub vector候補を評価し、mul/divはqualified implementationがない限りscalar fallbackとなる。
+- [ ] `SSE2=true,FMA=false`ではVector128 add/sub候補を評価し、mul/divはscalar fallbackとなる。
+- [ ] ARM64 AdvSimd candidateはscalar differential全required corpusをbitwise passするまでproduction candidate statusにしない。
+- [ ] 各feature combinationに `selected backend / add-sub status / mul-div status / mismatch count / fallback` をmatrixで保存する。
+- [ ] unsupported combinationでbasic public APIが`PlatformNotSupportedException`を送出しない。
 
 ## P3-006 production dispatch・fallback・benchmark gate
 
-**設計参照:** §17.4, §18
+**設計参照:** §17.4, §47
 
 ### 受け入れ条件
 
-- [ ] production dispatchはcorrectness gateを通過したkernelだけを候補にする。
-- [ ] 同一realistic workloadでscalar比の性能改善を示せないkernelはproduction dispatchへ入れない。
-- [ ] capabilityのどの組合せでも正しいbackendかscalar fallbackが選択される。
-- [ ] backend選択によってpublic result、exception、signed zero、Empty semanticsが変わらない。
-- [ ] scalar/SIMD canonical endpoint bitsが全production corpusで一致する。
-- [ ] Phase 3時点ではscalar operatorごとのP/Invokeを導入しない。
+- [ ] benchmark policy commitをcandidate result測定commitより前に作成し、履歴で順序を確認できる。
+- [ ] policyはBenchmarkDotNet/.NET 10、scalar baseline、同一input corpus、batch N=`4,32,256,4096`、operation=`Add,Sub,Mul,Div`、metric=`median ns/interval`、allocationを固定する。
+- [ ] corpus seedと各input bits fileのSHA-256をpolicy/reportへ記録し、scalar/candidateで同じfileを使用する。
+- [ ] production採用条件をN>=256全workloadのscalar比median幾何平均`<=0.95`、各workload`<=1.02`、allocation増加`0 B`に固定する。
+- [ ] correctness mismatch>0のcandidateは性能結果にかかわらず不採用となる。
+- [ ] 上記performance条件を1つでも満たさないcandidateはproduction dispatch tableへ登録しない。
+- [ ] dispatch tableの各entryにrequired ISA/FMA、fallback backend、correctness report path、benchmark report pathを記録する。
+- [ ] force-disable全SIMD testでscalar fallbackが選択され、canonical corpus SHA-256がscalar baselineと一致する。
+- [ ] public API baseline diffが0件である。
 
 ---
 
 # Phase 4A
+
+## P4A-000 Phase 4A implementation preflight
+
+**設計参照:** §19～§24, §46, §52.2
+
+### 受け入れ条件
+
+- [ ] Phase 1～3の必須taskが全件`完了`、P2 public API baseline gateがpassである。
+- [ ] review reportにPhase 4A対象§19～§24、`reviewed HEAD=<40桁SHA>`, `verdict=pass`, `unresolved findings=0`を記録する。
+- [ ] review report pathとreviewed HEADをP4A-000 reportへ記録する。
+- [ ] diagnostic artifact workflow fileが`.github/workflows/`配下に存在する。
+- [ ] smoke fixture `Entire.Contains(+Infinity)==false` と `Entire.Contains(0.0)==true` が既存harnessでpassする。
+- [ ] Midpoint tie policyとPhase 4A public namingを単一値でdecision recordへ固定し`TBD`を0件にする。
+- [ ] P4A-001の最初のRed commitのparent時点でP4A-000 status=`完了`である。
 
 ## P4A-001 Contains / IsBounded
 
@@ -412,10 +488,10 @@ infra/documentationのみのタスクにはTDDを要求しないが、内容の�
 
 ### 受け入れ条件
 
-- [ ] `Contains`はEmpty/NaN/±Infinityにfalse、finite memberにendpoint-inclusiveでtrueを返す。
-- [ ] `Entire.Contains(±Infinity) == false`を固定fixtureで確認する。
-- [ ] Zeroは`+0.0`/`-0.0`の両方を含む。
-- [ ] `IsBounded`はnonemptyかつ両endpoint finiteの場合のみtrueである。
+- [ ] `Empty.Contains(0)==false`, `Entire.Contains(0)==true`, `Entire.Contains(+Inf)==false`, `Entire.Contains(-Inf)==false`, `Entire.Contains(NaN)==false`となる。
+- [ ] `Zero.Contains(+0.0)==true`かつ`Zero.Contains(-0.0)==true`となる。
+- [ ] `[1,2].Contains(1)==true`, `.Contains(2)==true`, `.Contains(0)==false`, `.Contains(3)==false`となる。
+- [ ] `IsBounded`はEmpty=false, Entire=false, `[1,2]`=true, `[-Inf,2]`=false, `[1,+Inf]`=falseとなる。
 
 ## P4A-002 Intersect / ConvexHull
 
@@ -423,10 +499,11 @@ infra/documentationのみのタスクにはTDDを要求しないが、内容の�
 
 ### 受け入れ条件
 
-- [ ] Empty intersectionはEmpty、disjoint intersectionはEmptyを返す。
-- [ ] hull(Empty,Y)=Y、hull(X,Empty)=Xを満たす。
-- [ ] intersection/hullのcommutative/idempotent propertyが成功する。
-- [ ] `Intersect(X,Y)`はX/Y双方のsubset、X/Yは`ConvexHull(X,Y)`のsubsetである。
+- [ ] `Intersect(Empty,Y)=Empty`と`Intersect(X,Empty)=Empty`となる。
+- [ ] `Intersect([1,3],[2,4])=[2,3]`、`Intersect([1,2],[3,4])=Empty`となる。
+- [ ] `ConvexHull(Empty,[1,2])=[1,2]`、`ConvexHull([1,2],Empty)=[1,2]`となる。
+- [ ] `ConvexHull([1,3],[2,4])=[1,4]`となる。
+- [ ] fixed-seed propertyでintersection/hullのcommutativeとidempotentがpassする。
 
 ## P4A-003 relation named API
 
@@ -434,34 +511,36 @@ infra/documentationのみのタスクにはTDDを要求しないが、内容の�
 
 ### 受け入れ条件
 
-- [ ] subset/interior/disjoint/precedes/strict precedes/weak less/strict lessをnamed APIとして提供する。
-- [ ] `Entire.IsInteriorOf(Entire) == true`をextended strict relation規則で満たす。
-- [ ] endpoint接触はdisjointではない。
-- [ ] Emptyを含むsubset/interior/precedes/weak/strict matrixを決定的fixtureで全件検証する。
-- [ ] `<`, `<=`, `>`, `>=` operatorを基本`Interval`へ追加しない。
+- [ ] `Empty.IsSubsetOf(Y)==true`、nonempty `.IsSubsetOf(Empty)==false`となる。
+- [ ] `[2,3].IsSubsetOf([1,4])==true`, `[0,3].IsSubsetOf([1,4])==false`となる。
+- [ ] `Empty.IsInteriorOf(Y)==true`、`Entire.IsInteriorOf(Entire)==true`となる。
+- [ ] `Empty.IsDisjointFrom(Y)==true`; `[1,2]`と`[2,3]`はdisjoint=false、`[1,2]`と`[3,4]`はtrueとなる。
+- [ ] Empty involved `Precedes`/`StrictlyPrecedes`はtrueとなる。
+- [ ] weak/strict endpoint-wise lessのEmpty matrixはEmpty/Empty=true、Empty/nonempty=false、nonempty/Empty=falseとなる。
+- [ ] public API baselineに`operator <, <=, >, >=`が存在しない。
 
 ## P4A-004 IntervalOverlap
 
-**設計参照:** §23, §44.1 `F-PR3-017`
+**設計参照:** §23
 
 ### 受け入れ条件
 
-- [ ] 16状態すべてに最低1fixtureがある。
-- [ ] `BothEmpty`、`FirstEmpty`、`SecondEmpty`を他状態と混同しない。
-- [ ] 全状態でinverse mappingが成立する。
-- [ ] `BothEmpty` inverseが`BothEmpty`であるreview-regression fixtureを含む。
+- [ ] enumに`BothEmpty, FirstEmpty, SecondEmpty, Before, Meets, Overlaps, Starts, ContainedBy, Finishes, Equals, FinishedBy, Contains, StartedBy, OverlappedBy, MetBy, After`の16値が存在する。
+- [ ] 16 stateそれぞれを発生させる最低1 fixtureをcaseId付きで固定する。
+- [ ] `BothEmpty`のinverseが`BothEmpty`、`FirstEmpty<->SecondEmpty`, `Before<->After`, `Meets<->MetBy`, `Overlaps<->OverlappedBy`, `Starts<->StartedBy`, `ContainedBy<->Contains`, `Finishes<->FinishedBy`, `Equals<->Equals`となる。
+- [ ] 全fixtureで`GetOverlap(X,Y)`とinverse(`GetOverlap(Y,X)`)が一致する。
 
 ## P4A-005 numeric properties
 
-**設計参照:** §24.1～24.3
+**設計参照:** §24.1～§24.3
 
 ### 受け入れ条件
 
-- [ ] WidthはEmpty=NaN、unbounded=+Infinity、singleton=+0、bounded=`RU(b-a)`である。
-- [ ] MidpointはEmpty=NaN、Entire=+0、lower-unbounded=`double.MinValue`、upper-unbounded=`double.MaxValue`を返す。
-- [ ] Radiusは採用Midpointに対しXをcoverする最小directed radiusの設計式を満たす。
-- [ ] Magnitude/MignitudeはEmpty=NaN、zero crossing時Mignitude=+0を満たす。
-- [ ] Width/Radius >= 0、Mignitude <= Magnitudeのproperty testが成功する。
+- [ ] `Width(Empty)=NaN`, `Width([1,1])=+0.0`, `Width([1,2])=RU(1)`, `Width(Entire)=+Inf`となる。
+- [ ] `Midpoint(Empty)=NaN`, `Midpoint(Entire)=+0.0`, `Midpoint([-Inf,2])=double.MinValue`, `Midpoint([1,+Inf])=double.MaxValue`となる。
+- [ ] finite midpointのtie fixtureはP4A-000で固定したtie policyのexpected bitと一致する。
+- [ ] Radiusは`max(SubtractUp(mid,Lower),SubtractUp(Upper,mid))`と同じbitを返しnegative値にならない。
+- [ ] `Magnitude(Empty)=NaN`, `Magnitude([-2,1])=2`, `Mignitude([-2,1])=+0.0`, `Mignitude([2,3])=2`となる。
 
 ## P4A-006 Abs / Sign / pointwise min-max
 
@@ -469,10 +548,11 @@ infra/documentationのみのタスクにはTDDを要求しないが、内容の�
 
 ### 受け入れ条件
 
-- [ ] Absがpositive/negative/zero-crossing/Empty matrixを満たす。
-- [ ] Signはpoint function `-1/0/+1`のinterval extensionであり、signed zeroを±1へ誤変換しない。
-- [ ] PointwiseMin/MaxはどちらかEmptyならEmptyを返す。
-- [ ] 各結果endpointが設計のpointwise min/max式と一致する。
+- [ ] `Abs(Empty)=Empty`, `Abs([1,2])=[1,2]`, `Abs([-2,-1])=[1,2]`, `Abs([-2,1])=[-0.0,2]`となる。
+- [ ] `Sign(Empty)=Empty`, `Sign([-2,-1])=[-1,-1]`, `Sign(Zero)=Zero`, `Sign([1,2])=[1,1]`, `Sign([-2,3])=[-1,1]`となる。
+- [ ] `PointwiseMin([1,3],[2,4])=[1,3]`, `PointwiseMax([1,3],[2,4])=[2,4]`となる。
+- [ ] min/maxはいずれかEmptyならEmptyとなる。
+- [ ] zeroを含む結果のlower/upper signed-zero bitsがcanonical ruleと一致する。
 
 ## P4A-007 Floor/Ceiling/Truncate/Round
 
@@ -480,38 +560,53 @@ infra/documentationのみのタスクにはTDDを要求しないが、内容の�
 
 ### 受け入れ条件
 
-- [ ] Emptyを伝播する。
-- [ ] Infinity endpointを維持する。
-- [ ] endpointへ同じ単調非減少point functionを適用し、追加outward roundingを行わない。
-- [ ] zero endpointをcanonicalizeする。
-- [ ] 未知`MidpointRounding`値で`ArgumentOutOfRangeException`を送出する。
+- [ ] Empty inputは4関数すべてEmptyを返す。
+- [ ] Infinity endpointを持つ区間でInfinity endpointを保持する。
+- [ ] `Floor([1.2,2.8])=[1,2]`, `Ceiling([1.2,2.8])=[2,3]`, `Truncate([-1.8,2.8])=[-1,2]`となる。
+- [ ] RoundはP4A-000で確定したmode matrixを各mode最低1 tie fixtureでpassする。
+- [ ] 未知`MidpointRounding` enum値をcast入力した場合`ArgumentOutOfRangeException`となる。
+- [ ] integer result endpointに追加ULP拡張を行わない。
 
 ## P4A-008 Phase 4A API/conformance close
 
-**設計参照:** §20, §24.2, §46
+**設計参照:** §44～§46
 
 ### 受け入れ条件
 
-- [ ] Phase 4A public namingをreviewで確定する。
-- [ ] finite Midpoint tie policyをconformance reviewで確定しfixture化する。
-- [ ] Phase 4A deterministic/property/reference testが全件成功する。
-- [ ] x64/ARM64、backend間canonical bitsが一致する。
-- [ ] public API baselineを更新する。
+- [ ] P4A-001～007のfocused testsが全件passする。
+- [ ] property tests `Intersect commutative/idempotent`, `Hull commutative/idempotent`, `Intersect subset operands`, `operands subset Hull`, `Width/Radius>=0`, `Mignitude<=Magnitude`が固定seedでpassする。
+- [ ] x64/ARM64 canonical result SHA-256が一致する。
+- [ ] qualified backend間endpoint bits mismatch=0となる。
+- [ ] public API baselineを更新しunapproved diff=0となる。
+- [ ] failure artifactでfunction名、input bits、branch、expected/actual/referenceを追跡できる。
 
 ---
 
 # Phase 4B
 
-## P4B-001 tight IntervalConstants
+## P4B-000 Phase 4B implementation preflight
 
-**設計参照:** §25, §26.1
+**設計参照:** §25～§27, §46, §52.2
 
 ### 受け入れ条件
 
-- [ ] Pi/HalfPi/TwoPi/E/Ln2/Ln10/Sqrt2をnearest point intervalではなくtight directed endpointsで固定する。
-- [ ] MPFR directed conversionで生成したendpoint bitsとrepository固定値が一致する。
-- [ ] build時にnetwork/native generatorを要求しない。
-- [ ] periodic reduction用の高精度tableとpublic 2-endpoint constantを分離する。
+- [ ] P4A-008が`完了`である。
+- [ ] review reportに§25～§27、reviewed HEAD、verdict=pass、unresolved findings=0を記録する。
+- [ ] diagnostic workflowが存在し、P4A final run artifactを1件取得できる。
+- [ ] smoke expected `Square([-2,1])=[-0.0,4]` をharnessへ登録しRed testとして実行可能である。
+- [ ] P4B-001 Red commit前にP4B-000 status=`完了`とする。
+
+## P4B-001 tight IntervalConstants
+
+**設計参照:** §26.1
+
+### 受け入れ条件
+
+- [ ] `Pi, HalfPi, TwoPi, E, Ln2, Ln10, Sqrt2`の7 constantについてMPFR RNDD/RNDU生成lower/upper bitsをfixtureへ固定する。
+- [ ] generatorは各constantで`lower <= exact value <= upper`を確認する。
+- [ ] exact valueがbinary64で表現不能なconstantをnearest doubleのsingletonとして保存しない。
+- [ ] generator version、MPFR version、command、output SHA-256をreference-lockへ記録する。
+- [ ] production buildはMPFR/network/native generatorを必要とせず固定bitsだけでconstantを構築する。
 
 ## P4B-002 Reciprocal
 
@@ -519,10 +614,11 @@ infra/documentationのみのタスクにはTDDを要求しないが、内容の�
 
 ### 受け入れ条件
 
-- [ ] Empty->Empty、Zero->Empty、strict zero crossing->Entireを満たす。
-- [ ] one-sided zero `[a,0]` / `[0,b]`でInfinity endpointとdirected finite endpointが設計表どおりである。
-- [ ] strict positive/negative intervalでdirected reciprocal endpointがtightである。
-- [ ] extended 2-component結果をこのbare APIへ混在させない。
+- [ ] `Reciprocal(Empty)=Empty`, `Reciprocal(Zero)=Empty`, `Reciprocal([-1,1])=Entire`となる。
+- [ ] `Reciprocal([0,2])=[RD(1/2),+Inf]`となる。
+- [ ] `Reciprocal([-2,0])=[-Inf,RU(1/-2)]`となる。
+- [ ] strict positive `[1,2] -> [RD(1/2),RU(1)]`、strict negative `[-2,-1] -> [RD(-1),RU(-1/2)]`となる。
+- [ ] endpoint bitsがdirected divide primitiveと一致する。
 
 ## P4B-003 Square
 
@@ -530,10 +626,10 @@ infra/documentationのみのタスクにはTDDを要求しないが、内容の�
 
 ### 受け入れ条件
 
-- [ ] `X*X`へ委譲しない専用kernelを持つ。
-- [ ] positive/negative/zero-crossing/Emptyの結果が設計式と一致する。
-- [ ] zero-crossing lower endpointはcanonical `-0.0`である。
-- [ ] `Square(X)`が同じXに対する`X*X`のsubset-or-equalであるpropertyが成功する。
+- [ ] `Square(Empty)=Empty`, `Square([1,2])=[RD(1),RU(4)]`, `Square([-2,-1])=[RD(1),RU(4)]`となる。
+- [ ] `Square([-2,1])=[-0.0,4]`となる。
+- [ ] implementationがpublic `X*X`へ単純委譲しないことをcall graph/source testで確認する。
+- [ ] fixed-seed propertyで`Square(X).IsSubsetOf(X*X)==true`となる。
 
 ## P4B-004 Sqrt
 
@@ -541,10 +637,10 @@ infra/documentationのみのタスクにはTDDを要求しないが、内容の�
 
 ### 受け入れ条件
 
-- [ ] negative-onlyはEmpty、zero-crossingはlower=-0、positiveはdirected endpointsを返す。
-- [ ] `2^-969`近傍のsmall-input scale経路を固定fixtureで検証する。
-- [ ] candidate平方のexact relationから必要時だけNextUp/NextDownする。
-- [ ] MPFR directed resultとの差異が0件である。
+- [ ] `Sqrt(Empty)=Empty`, `Sqrt([-4,-1])=Empty`, `Sqrt([-1,4])=[-0.0,2]`, `Sqrt([1,4])=[1,2]`となる。
+- [ ] `SmallSqrtInputThreshold=2^-969`, `SqrtInputScale=2^106`, `SqrtResultScale=2^53`をfixtureで確認する。
+- [ ] `2^-969` previous/exact/nextの3caseでselected branchとMPFR directed output bitsを固定する。
+- [ ] candidate補正前後でexact-product comparisonを行い、必要時のみBitIncrement/BitDecrementするbranch witnessを持つ。
 
 ## P4B-005 integer Pow / Root
 
@@ -552,12 +648,13 @@ infra/documentationのみのタスクにはTDDを要求しないが、内容の�
 
 ### 受け入れ条件
 
-- [ ] `Pow(Empty,0)=Empty`、`Pow(nonempty,0)=[1,1]`を満たす。
-- [ ] positive odd/even、negative exponent、zero-only/zero-touch/strict zero-crossingを決定的matrixで検証する。
-- [ ] `int.MinValue`を安全に符号+`uint` magnitudeへ分解する。
-- [ ] Rootで`degree<=0`は`ArgumentOutOfRangeException`、degree=1はinputを返す。
-- [ ] even Root negative-onlyはEmpty、odd Rootは全実数上の単調増加結果を返す。
-- [ ] candidate^nと入力のexact relationで隣接補正を決定する。
+- [ ] `Pow(Empty,0)=Empty`, `Pow([2,3],0)=[1,1]`となる。
+- [ ] positive odd/even exponentをそれぞれnegative/positive/zero-crossing intervalで固定fixture化する。
+- [ ] negative exponentでZero-only=Empty、odd strict zero crossing=Entire、one-sided zero touchは設計endpoint+Infinity ruleとなる。
+- [ ] `int.MinValue` exponentをoverflowせず処理するfixtureがpassする。
+- [ ] `Root(value,degree<=0)`は`ArgumentOutOfRangeException`、degree=1はinput identityとなる。
+- [ ] even Rootのnegative-only input=Empty、zero crossing lower=-0.0、odd Rootはnegative domainを含めmonotonic resultとなる。
+- [ ] Root candidate^degreeとinput exact relationによる隣接補正がMPFR/reference bitsと一致する。
 
 ## P4B-006 FusedMultiplyAdd
 
@@ -565,26 +662,42 @@ infra/documentationのみのタスクにはTDDを要求しないが、内容の�
 
 ### 受け入れ条件
 
-- [ ] endpoint primitiveがexact `x*y+z`を1回だけdirected roundingする。
-- [ ] `(X*Y)+Z`へ委譲しない。
-- [ ] `FMA(X,Y,Z)`が同一set semanticsで`(X*Y)+Z`のsubset-or-equalである。
-- [ ] overflow/subnormal/cancellation fixtureがMPFR/exact referenceと一致する。
+- [ ] endpoint primitiveはexact `x*y+z`を1回だけdirected roundingする。
+- [ ] implementationがpublic `(X*Y)+Z`へ単純委譲しないことをcall graph/source testで確認する。
+- [ ] 二重丸めで差が出る固定witnessを持ち、FMA resultがexact oracle endpoint bitsと一致する。
+- [ ] fixed-seed propertyで`FMA(X,Y,Z).IsSubsetOf((X*Y)+Z)==true`となる。
+- [ ] Empty operand伝播とInfinity/zero undefined pair handlingを固定fixtureでpassする。
 
 ## P4B-007 MPFR corpus・elementary endpoint backend qualification
 
-**設計参照:** §28, §33
+**設計参照:** §18, §25, §28, §33
 
 ### 受け入れ条件
 
-- [ ] fixed MPFR version、53-bit precision、RNDD/RNDUでbinary64 exact inputからreference corpusを生成する。
-- [ ] MPFR version、generator hash、corpus hashをreference lockへ追加する。
-- [ ] elementary endpoint backend候補ごとにcorrectness根拠、supported function/platform、distribution/licenseを記録する。
-- [ ] BCL `Math.*`単体をcertified backendとして承認しない。
-- [ ] Phase 4C/Dのcore公開functionを全support platformで提供できるbackend方針を確定する。
+- [ ] MPFR version、precision=53、RNDD/RNDU、generator hash、corpus SHA-256をreference-lockへ保存する。
+- [ ] managed backendを正式採用する場合、全required endpoint corpusでMPFR bits mismatch=0とする。
+- [ ] native backendを使用しない場合はreportへ`native_backend_gate=N/A`と具体理由を記録する。
+- [ ] native backendを採用する場合、interop/copy/dispatch込みbenchmarkをP3-006と同じpolicyで測定し採用閾値をpassする。
+- [ ] native採用時、Linux x64/ARM64配布assetがCIから利用でき、missing binaryによる通常API failure=0となる。
+- [ ] native採用時、ABI smoke、32 parallel concurrent-call stress、NativeAOT publish、trimming publishが全て終了コード0となる。
+- [ ] native採用時、license/NOTICE/binary redistribution条件をrepository fileへ保存する。
+- [ ] managed/nativeでpublic `Interval` API baseline diff=0、同一corpus endpoint bits mismatch=0となる。
 
 ---
 
 # Phase 4C
+
+## P4C-000 Phase 4C implementation preflight
+
+**設計参照:** §28～§29, §33, §46, §52.2
+
+### 受け入れ条件
+
+- [ ] P4B-007が`完了`である。
+- [ ] §28～§29と§33のreview reportがreviewed HEAD、verdict=pass、unresolved findings=0を持つ。
+- [ ] endpoint backendがP4B-007でqualified済みである。
+- [ ] smoke fixture `Log([-1,1])=[-Inf,+0.0]`をMPFR harnessで比較可能である。
+- [ ] P4C-001 Red commit前にP4C-000 status=`完了`とする。
 
 ## P4C-001 Exp / Exp2 / Exp10
 
@@ -592,9 +705,10 @@ infra/documentationのみのタスクにはTDDを要求しないが、内容の�
 
 ### 受け入れ条件
 
-- [ ] Empty伝播、`-Infinity -> +0` limit、`+Infinity -> +Infinity`を満たす。
-- [ ] finite overflow/underflow/subnormal endpointをtightに丸める。
-- [ ] MPFR RNDD/RNDU corpusとの差異が0件である。
+- [ ] Empty inputはEmptyを返す。
+- [ ] lower=-Infinity endpointはlower result=+0.0、upper=+Infinity endpointはupper result=+Infinityとなる。
+- [ ] finite normal/subnormal/underflow/overflow固定corpusでMPFR RNDD/RNDU bitsと一致する。
+- [ ] Exp/Exp2/Exp10各関数に最低1 exact-ish point、1 underflow boundary、1 overflow boundary fixtureを持つ。
 
 ## P4C-002 Log / Log2 / Log10
 
@@ -602,10 +716,11 @@ infra/documentationのみのタスクにはTDDを要求しないが、内容の�
 
 ### 受け入れ条件
 
-- [ ] `b<=0 -> Empty`を満たす。
-- [ ] `a<=0<b`ではlower=-Infinity limit、upperをdirected endpointで返す。
-- [ ] `b=+Infinity`ではupper=+Infinityを返す。
-- [ ] domain boundary近傍とsubnormal positive inputでMPFR corpusとの差異が0件である。
+- [ ] `b<=0`のinputはEmptyとなる。
+- [ ] `a<=0<b`ではlower=-Infinityとなる。
+- [ ] `b=+Infinity`ではupper=+Infinityとなる。
+- [ ] `[1,1]`はLog系でexact zero endpointを返す。
+- [ ] positive finite endpoint corpusでMPFR RNDD/RNDU bitsと一致する。
 
 ## P4C-003 Sinh / Cosh / Tanh
 
@@ -613,10 +728,10 @@ infra/documentationのみのタスクにはTDDを要求しないが、内容の�
 
 ### 受け入れ条件
 
-- [ ] Sinh/Tanhは単調増加endpoint ruleを満たす。
-- [ ] Coshはnegative-only/positive-only/zero-crossingの3classで設計式を満たす。
-- [ ] zero crossing Coshのlower endpointはexact 1である。
-- [ ] Infinity/subnormal/large finite inputを含むMPFR corpusとの差異が0件である。
+- [ ] Sinh/Tanhはmonotonic increasing endpoint ruleでMPFR bitsと一致する。
+- [ ] `Cosh([-3,-2])=[CoshDown(-2),CoshUp(-3)]`、`Cosh([2,3])=[CoshDown(2),CoshUp(3)]`となる。
+- [ ] `Cosh([-2,3])=[1,CoshUp(3)]`となる。
+- [ ] Empty/±Infinity endpoint fixtureを各関数でpassする。
 
 ## P4C-004 Asinh/Acosh/Atanh/Asin/Acos/Atan
 
@@ -624,29 +739,40 @@ infra/documentationのみのタスクにはTDDを要求しないが、内容の�
 
 ### 受け入れ条件
 
-- [ ] Asinh/Atanは全実数上の単調増加ruleを満たす。
-- [ ] Acoshはdomain `[1,+Infinity)`へclipする。
-- [ ] Asin/Acosはdomain `[-1,1]`へclipする。
-- [ ] Atanhはdomain `(-1,1)`、境界接触時±Infinity limit、`[-1,-1]`/`[1,1]`はEmptyを満たす。
-- [ ] Acosの単調減少endpoint順序を誤らない。
-- [ ] MPFR corpusとの差異が0件である。
+- [ ] Asinh/Atanは全実数monotonic increasingとしてMPFR bitsと一致する。
+- [ ] Acoshは`b<1 -> Empty`, `a<1<=b`ではlower=0 limit, positive valid rangeはdirected endpointsとなる。
+- [ ] Asin/Acosは`[-1,1]`へclipし、intersectionがEmptyならEmptyとなる。
+- [ ] Atanhは`(-1,1)`へclipし、`[-1,-1]`と`[1,1]`はEmpty、boundary接触では±Infinity limitを返す。
+- [ ] domain clipping前後のinput/branchをdiagnostic artifactへ記録する。
 
 ## P4C-005 Phase 4C backend/API gate
 
-**設計参照:** §33, §46
+**設計参照:** §33, §45, §46
 
 ### 受け入れ条件
 
-- [ ] Phase 4C各functionのdomain matrix reviewが完了する。
-- [ ] primary MPFR corpusとx64/ARM64 resultsが一致する。
-- [ ] 複数backendがある場合canonical endpoint bitsが一致する。
-- [ ] core公開functionが全support platformで通常入力に対して利用可能である。
-- [ ] failure artifactからfunction/domain/clipped domain/endpoint backend/correction decisionを追跡できる。
-- [ ] API baselineを更新する。
+- [ ] P4C-001～004 required MPFR corpus mismatch=0となる。
+- [ ] approved deviationがある場合はcaseId/expected/actual/reason/approverがmanifestに全件存在する。
+- [ ] x64/ARM64 canonical result SHA-256が一致する。
+- [ ] qualified backend間bits mismatch=0となる。
+- [ ] normal inputで`PlatformNotSupportedException`件数=0となる。
+- [ ] public API baselineのunapproved diff=0となる。
 
 ---
 
 # Phase 4D
+
+## P4D-000 Phase 4D implementation preflight
+
+**設計参照:** §28, §30～§33, §46, §52.2
+
+### 受け入れ条件
+
+- [ ] P4C-005が`完了`である。
+- [ ] §30～§33 review reportにreviewed HEAD、verdict=pass、unresolved findings=0を記録する。
+- [ ] high-precision reducer table format/bit length/generator hashをreviewで固定し`TBD`を0件にする。
+- [ ] smoke fixture `Atan2(Zero,[-2,-1])=Pi` と `Sin([0,HalfPi])=[0,1]` をreference harnessへ登録する。
+- [ ] P4D-001 Red commit前にP4D-000 status=`完了`とする。
 
 ## P4D-001 high-precision periodic reducer
 
@@ -654,10 +780,11 @@ infra/documentationのみのタスクにはTDDを要求しないが、内容の�
 
 ### 受け入れ条件
 
-- [ ] 全binary64範囲でquadrant/critical point/poleを判定できるfixed high-precision `2/pi`, `pi/2` tableを持つ。
-- [ ] `Math.PI`との通常除算や`value % (2*Math.PI)`だけで判定しない。
-- [ ] `ContainsPeriodicPoint`相当のexact判定をtest可能な単位へ分離する。
-- [ ] huge finite input、subnormal、critical point直前/直後のfixtureでreference reductionと一致する。
+- [ ] reducerが固定high-precision `2/pi` と `pi/2` tableを使用し、`Math.PI`通常除算だけでquadrantを決定するpathが0件である。
+- [ ] `% (2*Math.PI)`だけでperiodic critical point/poleを決定するpathが0件である。
+- [ ] exact critical lattice直前/一致/直後の固定binary64 witnessでquadrant/pole判定がreferenceと一致する。
+- [ ] MaxValue近傍を含むlarge-magnitude corpusでMPFR/reference quadrant判定 mismatch=0となる。
+- [ ] reducer diagnosticにinput bits、reduced quadrant、integer k、critical/pole decisionを保存する。
 
 ## P4D-002 Sin / Cos
 
@@ -665,11 +792,11 @@ infra/documentationのみのタスクにはTDDを要求しないが、内容の�
 
 ### 受け入れ条件
 
-- [ ] Sinは`-pi/2+2kpi`を含む場合lower=-1、`+pi/2+2kpi`を含む場合upper=+1をexactに含める。
-- [ ] Cosは`pi+2kpi`を含む場合lower=-1、`2kpi`を含む場合upper=+1をexactに含める。
-- [ ] 非有界または必要なmax/min lattice双方を含む場合`[-1,1]`を返す。
-- [ ] すべての結果が`[-1,1]`のsubsetである。
-- [ ] MPFR/reference corpusとの差異が0件である。
+- [ ] Sin intervalが`-pi/2+2kpi`を含むfixtureでlower=-1、`+pi/2+2kpi`を含むfixtureでupper=+1となる。
+- [ ] Cos intervalが`pi+2kpi`を含むfixtureでlower=-1、`2kpi`を含むfixtureでupper=+1となる。
+- [ ] nonbounded/十分広いfixtureでSin/Cosとも`[-1,1]`となる。
+- [ ] branch内endpoint-only fixtureでMPFR directed endpoint bitsと一致する。
+- [ ] fixed-seed propertyでresult subset `[-1,1]`が全件trueとなる。
 
 ## P4D-003 Tan
 
@@ -677,80 +804,100 @@ infra/documentationのみのタスクにはTDDを要求しないが、内容の�
 
 ### 受け入れ条件
 
-- [ ] poleなしの1 branch内で`[TanDown(a),TanUp(b)]`を返す。
-- [ ] poleへdomain内から近づける場合bare hullはEntireを返す。
-- [ ] poleしか含まずdomain内点がない入力はEmptyを返す。
-- [ ] pole直前/直後/接触/crossingのfixtureを固定し、periodic reducer判定をartifactに記録する。
+- [ ] poleを含まない1 branch inputは`[TanDown(a),TanUp(b)]`となる。
+- [ ] poleへdomain内から両側/片側で接近可能なinputはbare result=Entireとなる。
+- [ ] input intersectionがpole pointだけでdomain内点0件ならEmptyとなる。
+- [ ] pole直前/直後/跨ぎfixtureでreducer pole decisionがreferenceと一致する。
+- [ ] diagnostic artifactにpole index kとbranch decisionを保存する。
 
 ## P4D-004 Atan2
 
-**設計参照:** §31, §44.1 `F-PR3-011`
+**設計参照:** §31, §44.1 F-PR3-011
 
 ### 受け入れ条件
 
-- [ ] API orderは`Atan2(y,x)`である。
-- [ ] Empty operand -> Empty、X=ZeroかつY=Zero -> Emptyを満たす。
-- [ ] 全sign-class直積、axis、originを固定matrixで検証する。
-- [ ] strict negative Xに対するYの6class branch-cut matrixを全件fixture化する。
-- [ ] `Atan2([-1,0],[-2,-1]) -> [-pi,+pi]`、`Atan2(Zero,[-2,-1]) -> Pi`等のreview-regression fixtureを満たす。
-- [ ] signed zeroをbranch cut上下の別点として扱わない。
-- [ ] QII/QIII corner evaluationとPi endpointがdirected referenceと一致する。
+- [ ] operand EmptyならEmpty、`X=Zero && Y=Zero`ならEmptyとなる。
+- [ ] strictly negative XでY strictly negative/nonpositive-touch-zero/Zero/nonnegative-touch-zero/strictly-positive/crossing-zeroの6classを各1fixture以上持つ。
+- [ ] `Atan2([-1,0],[-2,-1])`はlower=`-Pi.Upper`, upper=`+Pi.Upper`となる。
+- [ ] `Atan2(Zero,[-2,-1])=IntervalConstants.Pi`となる。
+- [ ] `Atan2([0,1],[-2,-1])`はQII lower directed endpoint～`Pi.Upper`となる。
+- [ ] `Atan2([-1,1],[-2,-1])`は`[-Pi.Upper,+Pi.Upper]`となる。
+- [ ] signed zeroをbranch cut上下の別点として扱わずY=Zeroをprincipal value +piとする。
+- [ ] sign-class直積、axis、origin、negative-x branch cut corpusでMPFR/reference mismatch=0となる。
 
 ## P4D-005 positive-base general interval Pow
 
-**設計参照:** §32, §44.1 `F-PR3-012`
+**設計参照:** §32, §44.1 F-PR3-012
 
 ### 受け入れ条件
 
-- [ ] domainを`((0,+Infinity)xR) union ({0}x(0,+Infinity))`として扱い、negative baseを対象外にする。
-- [ ] scalar `PowDown/Up`へ`0^0`、`0^negative`を渡さないことをinternal hook/testで確認する。
-- [ ] strictly positive baseの3 exponent class式を満たす。
-- [ ] zero-only baseとzero-touching baseの全subcaseを固定matrixで検証する。
-- [ ] `Pow([0,0.5],[0,1]) -> [0,1]`、`Pow([0,0.5],[-1,0]) -> [1,+Infinity]`、`Pow([0,2],[0,1]) -> [0,2]`を満たす。
-- [ ] MPFR/referenceとの未承認差異が0件である。
+- [ ] negative base domainをgeneral Powへ受け入れず、integer exponentはinteger overloadで扱う。
+- [ ] `Pow([0,0.5],[0,1])=[0,1]`となる。
+- [ ] `Pow([0,0.5],[-1,0])=[1,+Infinity]`となる。
+- [ ] `Pow([0,2],[0,1])=[0,2]`となる。
+- [ ] `Pow([0,0],[-1,0])=Empty`、`Pow([0,0],[0,1])=Zero`となる。
+- [ ] zero-touch baseについてexponent 6class `d<0`, `c<0&&d==0`, `c==d==0`, `c<0<d`, `c==0<d`, `c>0`を各1fixture以上持つ。
+- [ ] internal hookで`PowDown/Up(0,0)`および`PowDown/Up(0,negative)`call count=0を確認する。
+- [ ] strictly-positive-base corner formula corpusでMPFR mismatch=0となる。
 
 ## P4D-006 Phase 4D backend/API gate
 
-**設計参照:** §33, §46
+**設計参照:** §33, §45, §46
 
 ### 受け入れ条件
 
-- [ ] periodic reduction、pole、branch cut、zero-boundaryの分岐がfailure artifactから追跡できる。
-- [ ] required deterministic/review-regression fixtureが全件成功する。
-- [ ] x64/ARM64と複数backendのcanonical endpoint bitsが一致する。
-- [ ] benchmark/correctnessを満たさないoptional backendをcore APIへ混在させない。
-- [ ] API baselineを更新する。
+- [ ] P4D-001～005 required fixtureが全件passする。
+- [ ] Sin/Cos/Tan/Atan2/PowのMPFR/reference required case mismatch=0となる。
+- [ ] x64/ARM64 canonical result SHA-256が一致する。
+- [ ] qualified backend間bits mismatch=0となる。
+- [ ] public API baselineのunapproved diff=0となる。
 
 ---
 
 # Phase 4E
 
-## P4E-001 IntervalUnion2
+## P4E-000 Phase 4E implementation preflight
 
-**設計参照:** §34, §44.1 `F-PR3-010`, `F-PR3-015`
+**設計参照:** §34～§43, §46, §52.2
 
 ### 受け入れ条件
 
-- [ ] `default(IntervalUnion2)`はCount=0のempty unionである。
-- [ ] Count=0/1/2のFirst/Second canonical stateを満たす。
-- [ ] Count=2で`First.Upper <= Second.Lower`を許可し、`First.Upper == Second.Lower`だけを理由にmergeしない。
-- [ ] strict overlapはinternal validation failureとし、黙ってmergeしない。
-- [ ] Count 0/1/2のequality/Hash/operatorがcanonical component列に基づく。
-- [ ] invalid indexer accessは`ArgumentOutOfRangeException`である。
-- [ ] 初版ではenclosure semanticsを誤解させる`Contains(double)`を公開しない。
+- [ ] P4D-006が`完了`である。
+- [ ] §34～§43 review reportにreviewed HEAD、verdict=pass、unresolved findings=0を記録する。
+- [ ] parser syntaxをexact grammarとしてdecision recordへ固定し、hex literalはC99-style `0x<hex>[.<hex>]p[+-]<decimal exponent>`をaccepted syntaxに含める。
+- [ ] parser resource limit `max input length / max significand digits / max exponent digits`を正整数の具体値でpreflight recordへ固定し`TBD`を0件にする。
+- [ ] binary interchange v1を採用する場合`length=18`, byte offsets, little-endianをpreflight recordへ固定する。
+- [ ] smoke fixture `DivideToUnion([1,2],Entire).Count==2`をexisting harnessへ登録する。
+- [ ] P4E-001 Red commit前にP4E-000 status=`完了`とする。
+
+## P4E-001 IntervalUnion2
+
+**設計参照:** §34, §44.1 F-PR3-010/F-PR3-015
+
+### 受け入れ条件
+
+- [ ] `default(IntervalUnion2).Count==0`, `IsEmpty==true`, `First==Empty`, `Second==Empty`となる。
+- [ ] Count=1はFirst nonempty/Second Empty、Count=2はFirst/Second nonemptyかつ`First.Upper<=Second.Lower`となる。
+- [ ] `First.Upper==Second.Lower`のCount=2をmergeしない固定fixtureを持つ。
+- [ ] `First.Upper>Second.Lower`のinternal Create2はvalidation failureとなる。
+- [ ] Count0/1/2 equality/hash/operatorはcanonical component列だけに依存し、unused field/NaN payloadへ依存しない。
+- [ ] indexerは`0<=index<Count`以外で`ArgumentOutOfRangeException`となる。
+- [ ] public `Contains(double)`を初版baselineへ追加しない。
 
 ## P4E-002 DivideToUnion
 
-**設計参照:** §35, §44.1 `F-PR3-010`, `F-PR3-013`
+**設計参照:** §35, §44.1 F-PR3-010/F-PR3-013
 
 ### 受け入れ条件
 
-- [ ] Empty operandまたはdenominator Zero -> Count0、denominator excludes zero -> Count1 ordinary divisionを満たす。
-- [ ] numerator Zeroかつdenominatorにnonzero memberがある場合Count1 Zeroを返す。
-- [ ] one-sided denominator `[0,d]` / `[c,0]`のZ/P/N/M matrixを全件固定する。
-- [ ] strict zero-crossing denominatorでstrict positive/negative numeratorはCount2、zero-containing numeratorは設計どおりCount1を返す。
-- [ ] `DivideToUnion([1,2],Entire)`がzero-touchのCount2 component enclosureを保持し、Entireへmergeしない。
-- [ ] 全caseで`X/Y == DivideToUnion(X,Y).ConvexHull`が成立する。
+- [ ] numerator/denominator Emptyまたはdenominator ZeroはCount0となる。
+- [ ] denominator excludes zeroはCount1で`First == ordinary division`となる。
+- [ ] numerator Zeroかつdenominatorにnonzero memberありはCount1 Zeroとなる。
+- [ ] one-sided `[0,d]`/`[c,0]`についてZ/P/N/M 8 combinationsのexpected tableをfixture化する。
+- [ ] strict zero-crossing denominatorでstrict positive/negative numeratorはCount2となる。
+- [ ] `DivideToUnion([1,2],Entire)`はCount2でFirst=`[-Inf,-0.0]`, Second=`[+0.0,+Inf]`となる。
+- [ ] numerator contains zeroかつnonzero intervalではstrict crossing denominator result=Count1 Entireとなる。
+- [ ] 全fixtureで`ordinary division == DivideToUnion(...).ConvexHull`となる。
 
 ## P4E-003 ReciprocalToUnion
 
@@ -758,59 +905,62 @@ infra/documentationのみのタスクにはTDDを要求しないが、内容の�
 
 ### 受け入れ条件
 
-- [ ] DivideToUnionの同一kernel semanticsをnumerator=Oneとして再利用する。
-- [ ] `ReciprocalToUnion(Entire)`がCount2の`[-Infinity,-0.0]`と`[+0.0,+Infinity]`を返す。
-- [ ] Zero -> Count0、strict positive/negative -> Count1、strict zero crossing -> Count2を満たす。
-- [ ] `ReciprocalToUnion(value).ConvexHull == Reciprocal(value)`を全domain classのfixtureで確認する。
+- [ ] Zero -> Count0、strict positive/negative -> Count1、strict zero crossing -> Count2となる。
+- [ ] `ReciprocalToUnion(Entire)`はCount2 `[-Inf,-0.0]` / `[+0.0,+Inf]`となる。
+- [ ] implementationはDivideToUnionの同一kernel semanticsをnumerator=Oneとして使用する。
+- [ ] `Reciprocal(value)==ReciprocalToUnion(value).ConvexHull`がbare semantics適用caseで成立する。
 
 ## P4E-004 ReverseMultiply
 
-**設計参照:** §36, §44.1 `F-PR3-010`
+**設計参照:** §36
 
 ### 受け入れ条件
 
-- [ ] semantics `{z | exists y in factor : z*y in product}`を満たす。
-- [ ] product Emptyまたはfactor Empty -> empty unionを返す。
-- [ ] `0 in product && 0 in factor -> Count1 Entire`を満たす。
-- [ ] それ以外はDivideToUnion相当の結果となる。
-- [ ] `ReverseMultiply([1,2],Entire)`がzero-touch Count2 component enclosureを保持する。
+- [ ] product/factor EmptyはCount0となる。
+- [ ] `0 in product && 0 in factor`ならCount1 Entireとなる。
+- [ ] `ReverseMultiply([1,2],Zero)=Count0`, `ReverseMultiply(Zero,Zero)=Count1 Entire`, `ReverseMultiply([0,2],Zero)=Count1 Entire`となる。
+- [ ] `ReverseMultiply([1,2],Entire)`はCount2 `[-Inf,-0.0]` / `[+0.0,+Inf]`となる。
+- [ ] 上記特殊case以外はDivideToUnion相当resultとなる。
 
 ## P4E-005 cancellative operations
 
-**設計参照:** §37, §44.1 `F-PR3-014`
+**設計参照:** §37, §44.1 F-PR3-014
 
 ### 受け入れ条件
 
-- [ ] Empty/common/unbounded 3x3 matrixを全件固定fixtureで検証する。
-- [ ] bounded/common同士はrounded Widthではなくexact width relationを比較する。
-- [ ] exact width(total) >= exact width(term)の場合だけ`[RD(a-c),RU(b-d)]`を返し、それ以外はEntireを返す。
-- [ ] `CancelSubtract(Empty,Empty) -> Empty`、`CancelSubtract(Empty,bounded) -> Empty`を満たす。
-- [ ] `CancelAdd(total,term)=CancelSubtract(total,-term)`で同じEmpty matrixを継承する。
+- [ ] Empty/common/unboundedの3x3 class matrix 9cellを各1fixture以上持つ。
+- [ ] `CancelSubtract(Empty,Empty)=Empty`, `CancelSubtract(Empty,bounded)=Empty`となる。
+- [ ] bounded/common同士でexact width(total)>=exact width(term)なら`[RD(a-c),RU(b-d)]`となる。
+- [ ] exact width(total)<exact width(term)ならEntireとなる。
+- [ ] width比較にrounded public `Width`だけを使用せずexact expansion/rational relationで判定する。
+- [ ] `CancelAdd(total,term)==CancelSubtract(total,-term)`が全9class fixtureで成立する。
 
 ## P4E-006 Decoration / default NaI
 
-**設計参照:** §38.1, §38.3～38.6, §44.1 `F-PR3-016`
+**設計参照:** §38.1, §38.3～§38.6, §44.1 F-PR3-016
 
 ### 受け入れ条件
 
-- [ ] `Decoration`の品質順を`Ill < Trv < Def < Dac < Com`として表現できる。
-- [ ] `default(DecoratedInterval).IsNaI == true`を満たす。
-- [ ] NaI inputはNaIへ伝播し、Illでordinary intervalを生成しない。
-- [ ] `FromInterval`はbounded nonempty=Com、unbounded nonempty=Dac、Empty=Trvを返す。
-- [ ] result state capによりEmptyは最大Trv、unbounded nonemptyは最大Dac、bounded nonemptyは最大Comとなる。
-- [ ] MaxValue singleton同士の加算等でunbounded resultをComとして返さないreview-regression fixtureがある。
+- [ ] `Decoration` underlying typeが`byte`である。
+- [ ] `(byte)Ill=0`, `(byte)Trv=4`, `(byte)Def=8`, `(byte)Dac=12`, `(byte)Com=16`となる。
+- [ ] `default(DecoratedInterval).IsNaI==true`となる。
+- [ ] `FromInterval([1,2]).Decoration=Com`, `FromInterval(Entire).Decoration=Dac`, `FromInterval(Empty).Decoration=Trv`となる。
+- [ ] NaI input operationはNaIを返し、Ill decorationでordinary interval stateを生成しない。
+- [ ] result capはEmpty<=Trv、unbounded nonempty<=Dac、bounded nonempty<=Comとなる。
+- [ ] `Com [MaxValue,MaxValue] + Com [MaxValue,MaxValue]`のunbounded result decorationがComにならない。
 
 ## P4E-007 DecoratedInterval equality/canonicalization
 
-**設計参照:** §38.2, §38.7, §44.1 `F-PR3-015`
+**設計参照:** §38.2, §38.7, §44.1 F-PR3-015
 
 ### 受け入れ条件
 
-- [ ] C# value equalityはreflexiveで`NaI == NaI`がtrueである。
-- [ ] NaIは固定Hashを持ち、internal NaN payloadに依存しない。
-- [ ] non-NaI equalityはcanonical interval partとDecorationを比較する。
-- [ ] `SemanticallyEquals`はNaIにfalse、non-NaIではdecorationを無視したinterval equalityを使用する。
-- [ ] `TryGetInterval`はNaIでfalse/out=Emptyを返す。
+- [ ] `NaI == NaI`、`NaI.Equals(NaI)`がtrueとなる。
+- [ ] NaI hashが固定でinternal NaN payload差に依存しない。
+- [ ] non-NaI equalityはcanonical interval partとDecorationの両方一致時だけtrueとなる。
+- [ ] `NaI.SemanticallyEquals(any)==false`となる。
+- [ ] non-NaI `SemanticallyEquals`はdecoration差を無視しinterval part equalityだけで判定する。
+- [ ] `NaI.TryGetInterval(out x)`はfalseかつx=Emptyとなる。
 
 ## P4E-008 decorated arithmetic/math
 
@@ -818,36 +968,47 @@ infra/documentationのみのタスクにはTDDを要求しないが、内容の�
 
 ### 受け入れ条件
 
-- [ ] decorated四則演算/mathはbare resultとoperation-specific `opDec`を取得後、共通canonical result capを必ず通す。
-- [ ] divisor zero-containing division、domain clipping Sqrt、Tan pole crossing等で`opDec`が設計の上限を超えない。
-- [ ] NaI入力を全operationでNaIへ伝播する。
-- [ ] bare interval resultとdecorated interval partが同じcanonical endpointsを持つ。
+- [ ] decorated add/sub/mul/div/mathの全entryが共通`CreateCanonical(resultInterval, requestedDecoration)`相当を通る。
+- [ ] NaI operandを含む全operationはNaIとなる。
+- [ ] divisor zero-containing divisionのopDec<=Trv、`Sqrt([-1,4])`のopDec=Trv、Tan pole crossingのopDec=Trvとなる。
+- [ ] bare result interval partとdecorated result interval partのcanonical endpoint bitsが一致する。
+- [ ] Empty result decorationがTrvを超えず、unbounded resultがComにならない。
 
 ## P4E-009 exact/outward parser・formatter
 
-**設計参照:** §40, §43
+**設計参照:** §40, §43, F-PR5-006
 
 ### 受け入れ条件
 
-- [ ] `Empty`、`Entire`、`[a,b]`、`[a]`の採用syntaxをparseできる。
-- [ ] decimal tokenを`double.Parse`点区間化せず、exact `sign * integerSignificand * 10^exponent`として解析し外向き丸めする。
-- [ ] exact lower>upper、NaN endpoint、lower +Infinity、upper -Infinity、Infinity singletonを拒否する。
-- [ ] `TryParse`系はinvalid inputでfalse/out=Emptyを返す。
-- [ ] exact/round-trip formatはparse後canonical endpoint bitsが元値と一致する。
-- [ ] 最大入力長、significand digit数、exponent digit数を固定し、過大入力をbounded resourceで拒否する。
-- [ ] exception messageへ入力全文を無制限に含めない。
+- [ ] accepted fixture `Empty`, `Entire`, `[1,2]`, `[1]`, `[-Infinity,1]`, `[1,+Infinity]`をparseできる。
+- [ ] decimal `[0.1]`はnearest singletonではなくexact decimal 0.1の`[RoundDown,RoundUp]`となる。
+- [ ] C99-style hex `[0x1p+0]`はexact `[1,1]`となる。
+- [ ] `[0x0.0000000000001p-1022]`はmin positive subnormal exact singletonとなる。
+- [ ] `[-0x0p+0]`はzero singletonとしてcanonical lower=-0.0/upper=+0.0となる。
+- [ ] rejected fixture `[+Infinity,1]`, `[1,-Infinity]`, `[Infinity]`, `[NaN,1]`, exact lower>upperはParse failureとなる。
+- [ ] `TryParse`系は全rejected fixtureでfalse/out=Emptyとなる。
+- [ ] parserはInvariantCulture固定とし、`[1,5]`をlocale decimal 1.5として解釈せずlower=1/upper=5として扱う。
+- [ ] parser implementationにrecursive descent/self-recursive callを使用せず、nesting syntaxを受け入れない。
+- [ ] P4E-000で固定したmax input length/significand digits/exponent digitsについてlimit値はaccepted、limit+1はbounded failureとなる。
+- [ ] exception messageに入力全文を無制限に含めず、max excerpt lengthをP4E-000 decision recordの整数値以下にする。
+- [ ] exact round-trip formatを採用した場合、format->parse後のcanonical endpoint bitsが元値と一致する。
 
 ## P4E-010 binary interchange
 
-**設計参照:** §41
+**設計参照:** §41, §43, F-PR5-007
 
 ### 受け入れ条件
 
-- [ ] private `[-Lower,Upper]` memory layoutをwire formatへ使用しない。
-- [ ] version/state/external Lower bits/external Upper bitsのversioned formatを実装する。
-- [ ] Empty/Entire/Zeroをcanonical external bitsでencodeする。
-- [ ] invalid version/state/NaN endpoint/reversed endpointをdecoderで拒否する。
-- [ ] encode/decode round-tripでcanonical interval bitsが一致する。
+- [ ] version 1 encoded lengthは常に18 byteである。
+- [ ] byte0=version、byte1=state、byte2..9=external Lower bits little-endian、byte10..17=external Upper bits little-endianとなる。
+- [ ] encoded dataにprivate `[-Lower,Upper]` raw memory layoutを直接copyしない。
+- [ ] Zero round-tripはLower external bits=`0x8000000000000000`、Upper bits=`0x0000000000000000`となる。
+- [ ] Entire round-tripはLower=-Infinity, Upper=+Infinityのexternal bitsとなる。
+- [ ] Emptyはversion/stateでcanonical emptyを表し、internal NaN payloadをwireへ露出しない。
+- [ ] 17 byteと19 byte inputはversion/state/endpoint decodeより前のlength checkでrejectする。
+- [ ] unknown version、unknown state、NaN endpoint、lower>upper、lower=+Inf、upper=-Infをrejectする。
+- [ ] reject pathで片側NaN等のinvalid internal Interval stateを生成しない。
+- [ ] normal/Zero/Entire/Emptyのencode->decode round-tripでcanonical public stateが一致する。
 
 ## P4E-011 split / bisect
 
@@ -855,12 +1016,13 @@ infra/documentationのみのタスクにはTDDを要求しないが、内容の�
 
 ### 受け入れ条件
 
-- [ ] `TrySplitAt`はnonempty、finite splitPoint、`Lower < splitPoint < Upper`の場合のみ成功する。
-- [ ] 成功時は`[Lower,splitPoint]`と`[splitPoint,Upper]`を返しgapを作らない。
-- [ ] `TryBisect`初版はbounded non-singletonのみを対象とする。
-- [ ] strict interior binary64が存在しない隣接endpoint区間はfalseを返す。
-- [ ] unbounded intervalを任意pivotで自動bisectしない。
-- [ ] childrenが元区間をcoverし、各childが元区間のsubsetであるproperty testが成功する。
+- [ ] `TrySplitAt`はEmpty、NaN/Infinity splitPoint、`splitPoint<=Lower`, `splitPoint>=Upper`でfalseとなる。
+- [ ] `[0,2]`を1でsplitするとleft=`[0,1]`, right=`[1,2]`となる。
+- [ ] split childrenは共有split pointを持ちgapを作らない。
+- [ ] `TryBisect`はbounded non-singletonのみ成功対象とする。
+- [ ] adjacent binary64 endpointsでstrict interior valueがないintervalはTryBisect=falseとなる。
+- [ ] unbounded intervalのTryBisectはfalseとなり任意pivotを自動選択しない。
+- [ ] fixed-seed propertyで`left/right subset original`かつ`ConvexHull(left,right)==original`となる。
 
 ## P4E-012 Phase 4E security/conformance/API gate
 
@@ -868,18 +1030,35 @@ infra/documentationのみのタスクにはTDDを要求しないが、内容の�
 
 ### 受け入れ条件
 
-- [ ] `F-PR3-010`、`F-PR3-013`～`F-PR3-017`のreview-regression fixtureが全件成功する。
-- [ ] union/decorated/parser/interchange/splitのdefault、equality、round-trip propertyが成功する。
-- [ ] parser/binary decoderのresource/security reviewが完了し、入力上限値が文書化される。
-- [ ] x64/ARM64と複数backendのcanonical resultが一致する。
-- [ ] failure artifactからunion component、decoration、parser exact rational/resource limit、split stateを追跡できる。
-- [ ] public API baselineを更新する。
+- [ ] `F-PR3-010`, `F-PR3-013`～`F-PR3-017`のreview-regression fixtureが全件passする。
+- [ ] union/decorated equality/default/round-trip、parser exact/outward、binary 18-byte layout、split cover propertyが全件passする。
+- [ ] parser resource limitのlimit/limit+1 testとbinary 17/19 byte reject testがpassする。
+- [ ] x64/ARM64 canonical result SHA-256が一致する。
+- [ ] qualified backend間canonical bits mismatch=0となる。
+- [ ] failure artifactからunion component、decoration、parser exact rational/resource-limit decision、binary reject reason、split stateをcaseId単位で追跡できる。
+- [ ] public API baselineのunapproved diff=0となる。
 
 ---
 
-## 4. Phase完了時の更新規則
+## 4. PR #5 review finding対応表
 
-- Phase内の必須タスクがすべて`完了`になり、`tasks/phases-status.md`の完了条件を全件満たした時だけPhaseを`完了`へ変更する。
-- 後続Phase開始後に前Phaseの数値意味論を変更する必要が生じた場合は、通常タスクとして黙って変更せず、設計変更とbreaking-change判定を先に行う。
-- API freeze後に基本`Interval` APIを変更する場合は、該当タスクの再open、API baseline差分、`doc/Design/BreakingChanges.md`の要否を必ず確認する。
-- CIによる完了判定は必ず対象PR current HEAD SHAと一致するworkflow runを使用する。
+| Finding | 修正先 | 具体化した証拠 |
+|---|---|---|
+| F-PR5-001 High | P4A-000/P4B-000/P4C-000/P4D-000/P4E-000 | reviewed HEAD/verdict/report path/diagnostic workflow/smoke fixture/Red開始禁止 |
+| F-PR5-002 Medium | P1-001 | caseId/inputBits/branch/exact/Devo6/inari/kv/MPFR/expected-difference fields |
+| F-PR5-003 Medium | P1-002 | `[-Lower,Upper]`, canonical qNaN 2 lane,片側NaN禁止, raw constructor, ToString |
+| F-PR5-004 Medium | P1-006/P1-008 | `NextUp/NextDown/無補正`条件と5 branch witnessを明記 |
+| F-PR5-005 Medium | P1-012/P2-001/P3-006 | API 3scenario、benchmark workload/metric/閾値を固定 |
+| F-PR5-006 Medium | P4E-000/P4E-009 | accepted/rejected parser fixture、hex syntax、InvariantCulture、recursion/resource limit |
+| F-PR5-007 Medium | P4E-010 | 18 byte、byte offset、little-endian、length-first reject |
+| F-PR5-008 Medium | P1-013 | allocation/disassembly/NativeAOT/trimming/raw-constructor gate |
+| F-PR5-009 Low | P4E-006 | `Decoration : byte`, 0/4/8/12/16を固定 |
+| F-PR5-010 Medium | P4B-007 | managed N/Aまたはnative interop性能/ABI/thread/AOT/trimming/distribution/license gate |
+
+## 5. Phase完了時の更新規則
+
+- Phase内の必須taskが全て`完了`になり、`tasks/phases-status.md`の完了条件を全件満たした時だけPhaseを`完了`へ変更する。
+- Phase 4のpreflight reviewed design HEADが更新された場合、対応`P4?-000`を再openし、新HEADのreview passまでsource実装を停止する。
+- API freeze後にbasic `Interval` APIを変更する場合、P2-003 gateをfailさせ、baseline更新とbreaking-change判定を先に行う。
+- CIによる完了判定は必ず対象PR current HEAD SHAと一致するworkflow runのみ使用する。
+- workerはmergeしない。
