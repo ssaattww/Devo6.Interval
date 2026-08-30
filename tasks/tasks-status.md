@@ -761,7 +761,7 @@ infra/documentationのみのタスクにはTDDを要求しないが、内容の�
 - [ ] DivideToUnionの同一kernel semanticsをnumerator=Oneとして再利用する。
 - [ ] `ReciprocalToUnion(Entire)`がCount2の`[-Infinity,-0.0]`と`[+0.0,+Infinity]`を返す。
 - [ ] Zero -> Count0、strict positive/negative -> Count1、strict zero crossing -> Count2を満たす。
-- [ ] `Reciprocal(value).ConvexHull`とのbare semantics対応をfixtureで確認する。
+- [ ] `ReciprocalToUnion(value).ConvexHull == Reciprocal(value)`を全domain classのfixtureで確認する。
 
 ## P4E-004 ReverseMultiply
 
