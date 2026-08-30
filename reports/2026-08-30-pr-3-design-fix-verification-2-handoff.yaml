@@ -1,0 +1,194 @@
+schema_version: 3
+producer:
+  skill: chat-review-worker
+  mode: fix_verification
+  generated_at: 2026-08-30T17:30:00+09:00
+
+repository: ssaattww/Devo6.Interval
+issue_or_pr: "PR #3"
+branch: docs/detailed-interval-arithmetic-design
+base_ref: main
+base_sha: ad5c058f8a4164b0c7d0763c65246914ea5d1c03
+
+target:
+  source_fix_verification_head: c1826cc8dab3f070bfb5133ece44969a03727e97
+  source_fix_verification_report: reports/2026-08-30-pr-3-design-fix-verification.md
+  follow_up_start_head: 0c0bd720e7e32332fc1de9a136c954e50695ec1b
+  normative_fix_commit: 8c90ae3cc7bc11d26d85da81b57612197938b7e9
+  design_index_commit: 430d2e852579451876e848d33f0d76dda1738f48
+  fix_reviewed_pr_head: 13cf07cfcdf01205ab4466a99abd380fd1f1d103
+  verification_report_commit: 109b90e848a32a399dd6ed9663815f889360de58
+  verification_handoff_commit: commit_pending
+  final_publication_head: commit_pending
+
+review:
+  mode: fix_verification
+  reviewer:
+    identity: ChatGPT GPT-5.6 Sol
+    role: normal_reviewer
+    continuity:
+      same_reviewer_as_previous_fix_verification: true
+      reason: finding identities and severities are preserved across same-reviewer closure verification
+    independence:
+      implemented_design_fix: false
+      prior_repository_writes_are_review_artifacts_only: true
+  verdict: pass
+  report: reports/2026-08-30-pr-3-design-fix-verification-2.md
+  active_finding_count: 0
+  resolved_in_this_verification: 2
+  prior_resolved_maintained: 6
+  withdrawn_count: 1
+
+source_findings:
+  - id: F-PR3-004
+    severity: medium
+    source_status: active
+    verification_status: resolved
+    completeness:
+      required_action:
+        - correct IsSingleton source or define equivalent matrix
+        - correct numeric numsToInterval source mapping
+        - resolve Empty inf/sup semantics
+        - align conformance summary and gate with actual policy
+        - correct closure report/handoff claim
+      design_paths:
+        - doc/Design/detail/IntervalArithmetic.Revision3.md §2
+        - doc/Design/detail/IntervalArithmetic.Revision3.md §4.1-§4.8
+        - doc/Design/detail/IntervalArithmetic.Revision3.md §6
+        - doc/Design/detail/README.md
+      concrete_evidence:
+        - pinned ITF1788 libieeep1788_class.itl contains minimal_nums_to_interval_test with finite, unbounded and invalid bare numeric cases
+        - pinned ITF1788 repository has no usable isSingleton case; Revision 3 explicitly uses repository-defined equivalent cases
+        - Empty public Lower/Upper are +Infinity/-Infinity while internal Empty remains canonical NaN lanes
+        - conformance summary separates required external/repository-defined, source extraction errors, deviations, deferred and excluded cases
+      result: complete
+
+  - id: F-PR3-009
+    severity: medium
+    source_status: active
+    verification_status: resolved
+    completeness:
+      required_action:
+        - compare exact finite result with ±double.MaxValue before nearest-result conversion
+        - separate finite overflow from Infinity-operand semantics
+        - require add/sub/mul/div positive and negative overflow fixtures to use independent finite-overflow oracle path
+      design_paths:
+        - doc/Design/detail/IntervalArithmetic.Revision3.md §3.1-§3.5
+        - doc/Design/detail/IntervalArithmetic.Revision3.md §5.1-§5.3
+        - doc/Design/detail/IntervalArithmetic.Revision3.md §6
+      concrete_evidence:
+        - R > +MaxFinite maps Up to +Infinity and Down to +MaxFinite
+        - R < -MaxFinite maps Up to -MaxFinite and Down to -Infinity
+        - BCL nearest finite-rational conversion only occurs within finite range
+        - Infinity operands use a separate interval-special-value-semantics path
+        - positive/negative overflow fixtures exist for addition, subtraction, multiplication and division
+      result: complete
+
+prior_findings:
+  - id: F-PR3-001
+    severity: high
+    verification_status: remains_resolved
+  - id: F-PR3-002
+    severity: medium
+    verification_status: remains_resolved
+  - id: F-PR3-003
+    severity: low
+    verification_status: withdrawn_no_action
+  - id: F-PR3-005
+    severity: medium
+    verification_status: remains_resolved
+  - id: F-PR3-006
+    severity: medium
+    verification_status: remains_resolved
+  - id: F-PR3-007
+    severity: medium
+    verification_status: remains_resolved
+  - id: F-PR3-008
+    severity: low
+    verification_status: remains_resolved
+
+coverage:
+  - criterion: source_finding_closure
+    disposition: checked_no_finding
+  - criterion: requirement_design_conformance
+    disposition: checked_no_finding
+  - criterion: public_api_empty_semantics
+    disposition: checked_no_finding
+  - criterion: conformance_source_mapping
+    disposition: checked_no_finding
+  - criterion: conformance_extraction_and_gate
+    disposition: checked_no_finding
+  - criterion: exact_rational_oracle_completeness
+    disposition: checked_no_finding
+  - criterion: deterministic_overflow_fixture_adequacy
+    disposition: checked_no_finding
+  - criterion: prior_directed_rounding_regression
+    disposition: checked_no_finding
+  - criterion: reference_oracle_roles
+    disposition: checked_no_finding
+  - criterion: x64_arm64_ci_design
+    disposition: checked_no_finding
+  - criterion: simd_capability_design
+    disposition: checked_no_finding
+  - criterion: native_backend_traceability
+    disposition: checked_no_finding
+  - criterion: report_handoff_accuracy
+    disposition: checked_no_finding
+  - criterion: scope_discipline
+    disposition: checked_no_finding
+  - criterion: security_secrets
+    disposition: not_applicable
+  - criterion: repository_build_tests
+    disposition: not_applicable
+  - criterion: exact_head_ci
+    disposition: checked_no_finding
+    evidence: reviewed PR HEAD 13cf07cfcdf01205ab4466a99abd380fd1f1d103 had zero matching pull_request workflow runs; CI未実施; no other SHA substituted
+
+validation:
+  repository_build_or_tests:
+    applicable: false
+    reason: documentation-only PR; no executable project or test target exists
+  external_reference:
+    itf1788_commit: d8c2a64478ebdc9cbde6ccef33eaad3bed60ed81
+    constructor_source_verified: true
+    isSingleton_external_source_absent_and_repository_matrix_explicit: true
+    empty_inf_sup_alignment_verified: true
+  exact_head_ci:
+    reviewed_head: 13cf07cfcdf01205ab4466a99abd380fd1f1d103
+    matching_runs: 0
+    status: CI未実施
+    substituted_other_sha: false
+
+reports:
+  verification_report: reports/2026-08-30-pr-3-design-fix-verification-2.md
+  verification_handoff: reports/2026-08-30-pr-3-design-fix-verification-2-handoff.yaml
+
+held:
+  - Design version 2 and Revision 3 must be read together until a separately reviewed consolidation is performed; README defines precedence.
+  - Actual Phase 1 oracle, adapters, conformance generator, tests and x64/ARM64 workflow remain to be implemented and validated by TDD.
+  - Pilot API remains provisional until Phase 2.
+
+blocked: []
+unexplored: []
+
+repository_side_effects:
+  - operation: accidental_draft_pr_created_and_closed
+    pr: "#4"
+    branch: noop-invalid
+    state: closed
+    impact_on_pr3: none
+  - operation: prior_accidental_branch_remains
+    branch: noop-invalid
+    cleanup_status: no branch-delete action available in current connector surface
+    impact_on_pr3: none
+
+next_action:
+  type: implementation
+  target: Phase 1 managed scalar pilot
+  summary: Design review is closed. Start Phase 1 with TDD, CI and diagnostic artifact requirements from the approved detailed design composition.
+  merge_allowed: false
+
+transport:
+  method: repository_file
+  packet_path: reports/2026-08-30-pr-3-design-fix-verification-2-handoff.yaml
+  final_publication_note: Final PR HEAD and exact-head CI state are checked after this packet commit because the packet cannot contain its own future persistence SHA.

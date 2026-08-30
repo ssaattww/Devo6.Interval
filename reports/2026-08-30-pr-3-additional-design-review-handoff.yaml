@@ -1,0 +1,342 @@
+schema_version: 3
+producer:
+  skill: chat-review-worker
+  mode: delta_limited_additional_design_review
+  generated_at: 2026-08-30T17:30:00+09:00
+
+repository: ssaattww/Devo6.Interval
+issue_or_pr: "PR #3"
+branch: docs/detailed-interval-arithmetic-design
+base_ref: main
+base_sha: ad5c058f8a4164b0c7d0763c65246914ea5d1c03
+
+target:
+  previous_reviewed_design_head: 13cf07cfcdf01205ab4466a99abd380fd1f1d103
+  delta_base_review_artifact_head: f60f78e7e1637d587d53c4f926fb05cf4ce0f3b8
+  reviewed_pr_head: 8e6e7499204fccf0643da82f274d1485dc0e3272
+  reviewed_delta: f60f78e7e1637d587d53c4f926fb05cf4ce0f3b8..8e6e7499204fccf0643da82f274d1485dc0e3272
+  primary_artifact: doc/Design/detail/IntervalArithmetic.md
+  report_commit: 1aad2aac5ca98c19bcb21a1f623a411432dd7cc0
+  handoff_commit: commit_pending
+  final_publication_head: commit_pending
+  note: >-
+    The technical verdict applies to reviewed_pr_head. Report and handoff commits are
+    review-administration artifacts only and do not transfer the verdict to later design changes.
+
+review:
+  mode: delta_limited_additional_design_review
+  verdict: fail
+  report: reports/2026-08-30-pr-3-additional-design-review.md
+  reviewer:
+    role: normal_reviewer
+    continuity:
+      same_as_previous_pr3_reviewer: true
+      reason: user requested review of only the newly added scope without repeating unchanged review work
+    independence:
+      implemented_reviewed_delta: false
+      prior_writes_are_review_artifacts_only: true
+  boundary:
+    include:
+      - Phase 4A set, relation, numeric and integer-valued functions
+      - Phase 4B algebraic functions and constants
+      - Phase 4C monotonic elementary functions
+      - Phase 4D periodic, singular, multivariate and general-power functions
+      - Phase 4E union, reverse/cancellative, decoration, I/O and splitting
+      - consolidation into the sole authoritative IntervalArithmetic.md
+      - new implementation reports and handoffs
+    exclude_except_regression_spot_checks:
+      - previously reviewed scalar four-arithmetic semantics
+      - previously reviewed directed-rounding algorithms
+      - previously reviewed Phase 1 conformance and exact-overflow rules
+  previous_core_regression_spot_checks:
+    result: passed
+    checked:
+      - Empty public endpoints remain +Infinity and -Infinity
+      - Empty internal canonical NaN state remains intact
+      - finite exact overflow is handled before BCL nearest conversion
+      - ITF1788 constructor source and repository IsSingleton matrix remain present
+      - multiplication/division thresholds and residual ties remain present
+      - ISA and FMA capabilities remain separate
+      - x64/ARM64 and exact-head CI rules remain present
+  active_finding_count: 8
+  severity_counts:
+    high: 2
+    medium: 5
+    low: 1
+
+scope:
+  - Review only the content added after the previous PASS/review-artifact head.
+  - Check mathematical set semantics and tight enclosure requirements.
+  - Check direct consolidation losses from deleted Phase 4 source documents.
+  - Check public value-type/API consistency.
+  - Check decorated-state invariants.
+  - Check TDD, artifact, reference and exact-head CI requirements.
+
+non_goals:
+  - Re-review unchanged four-arithmetic sections in full.
+  - Implement or edit the design fixes.
+  - Add production source, tests or workflows.
+  - Merge PR #3.
+
+files:
+  inspected_current:
+    - doc/Design/detail/IntervalArithmetic.md
+    - reports/2026-08-30-interval-non-arithmetic-detailed-design.md
+    - reports/2026-08-30-interval-non-arithmetic-detailed-design-handoff.yaml
+    - reports/2026-08-30-interval-detailed-design-consolidation.md
+    - reports/2026-08-30-interval-detailed-design-consolidation-handoff.yaml
+  inspected_pre_consolidation_for_loss_only:
+    - doc/Design/detail/IntervalNonArithmetic.Roadmap.md at 01f379255e8677c2cd78a1ea696bf2a925ff7f89
+    - doc/Design/detail/IntervalSetAndNumeric.md at 01f379255e8677c2cd78a1ea696bf2a925ff7f89
+    - doc/Design/detail/IntervalMathFunctions.md at 01f379255e8677c2cd78a1ea696bf2a925ff7f89
+    - doc/Design/detail/IntervalAdvancedFeatures.md at 01f379255e8677c2cd78a1ea696bf2a925ff7f89
+  inspected_references:
+    - unageek/inari src/basic.rs at 18b83a571d7681c76067bc38d90a74e8be29f545
+    - unageek/inari src/elementary.rs at 18b83a571d7681c76067bc38d90a74e8be29f545
+    - unageek/inari src/interval.rs at 18b83a571d7681c76067bc38d90a74e8be29f545
+  review_artifacts_created:
+    - reports/2026-08-30-pr-3-additional-design-review.md
+    - reports/2026-08-30-pr-3-additional-design-review-handoff.yaml
+
+findings:
+  - id: F-PR3-010
+    severity: high
+    status: active
+    origin: introduced_by_added_design
+    title: IntervalUnion2 strict-gap canonicalization collapses required zero-touch component enclosures
+    locations:
+      - doc/Design/detail/IntervalArithmetic.md §53.2
+      - doc/Design/detail/IntervalArithmetic.md §53.4
+      - doc/Design/detail/IntervalArithmetic.md §54
+      - doc/Design/detail/IntervalArithmetic.md §55
+    witness: >-
+      DivideToUnion([1,2], Entire) has mathematical components (-Infinity,0) and
+      (0,+Infinity). Their tight closed enclosures meet at signed zero. Current Create2
+      merges touching components and returns Entire, losing the two-component result.
+    required_action:
+      - Decide exact-set versus component-closure-enclosure semantics.
+      - If exact-set, represent open endpoints.
+      - If component enclosures, permit the zero-touch pair without merging and document the semantics.
+      - Add DivideToUnion, ReciprocalToUnion and ReverseMultiply fixtures with Entire denominator/factor.
+
+  - id: F-PR3-011
+    severity: high
+    status: active
+    origin: introduced_by_added_design
+    title: Atan2 negative-x branch-cut lower-side contact is not defined and can under-enclose
+    locations:
+      - doc/Design/detail/IntervalArithmetic.md §50
+    witness: >-
+      Atan2(y=[-1,0], x=[-2,-1]) contains +pi at y=0 and approaches -pi for y->0-;
+      the tight bare hull is [-pi,+pi]. Finite corner values plus a +pi axis candidate do
+      not supply the -pi limit.
+    required_action:
+      - Define a complete negative-x-axis sign matrix.
+      - Distinguish lower-side contact, Zero, upper-side contact and crossing.
+      - Specify canonical signed-zero handling.
+      - Add fixed branch-cut fixtures.
+
+  - id: F-PR3-012
+    severity: medium
+    status: active
+    origin: introduced_by_added_design
+    title: General positive-base Pow does not define zero-boundary substitutes for forbidden 0^0 and 0^negative endpoint calls
+    locations:
+      - doc/Design/detail/IntervalArithmetic.md §51
+    witnesses:
+      - "Pow([0,0.5],[0,1]) must be [0,1]"
+      - "Pow([0,0.5],[-1,0]) must be [1,+Infinity]"
+    required_action:
+      - Define rectangle-closure candidates for x->0+, y<0, y=0 and x=0,y>0.
+      - Do not route undefined point pairs to the scalar kernel.
+      - Add zero-boundary fixtures.
+
+  - id: F-PR3-013
+    severity: medium
+    status: active
+    origin: introduced_by_consolidation
+    title: DivideToUnion one-sided-zero denominator rules were lost during consolidation
+    locations:
+      - doc/Design/detail/IntervalArithmetic.md §54
+    witness: "DivideToUnion([1,2],[0,1]) has no current branch; expected Count=1 [1,+Infinity]"
+    required_action:
+      - Restore Y=[0,d] and Y=[c,0] tables for Zero, nonnegative, nonpositive and mixed numerators.
+      - Test ConvexHull equality with ordinary division for every one-sided case.
+
+  - id: F-PR3-014
+    severity: medium
+    status: active
+    origin: introduced_by_added_design
+    title: Cancellative Empty-total cases return Entire instead of the stated tightest result
+    locations:
+      - doc/Design/detail/IntervalArithmetic.md §56
+    witnesses:
+      - "CancelSubtract(Empty, Empty) should be Empty"
+      - "CancelSubtract(Empty, bounded) should be Empty"
+    required_action:
+      - Define the Empty/common/unbounded matrix.
+      - Propagate the same semantics to CancelAdd.
+      - Record any deliberate divergence from the pinned reference.
+
+  - id: F-PR3-015
+    severity: medium
+    status: active
+    origin: introduced_by_consolidation_and_added_design
+    title: IntervalUnion2 and DecoratedInterval value-equality contracts are not represented in the public API
+    locations:
+      - doc/Design/detail/IntervalArithmetic.md §53.1
+      - doc/Design/detail/IntervalArithmetic.md §57.2
+      - doc/Design/detail/IntervalArithmetic.md §57.7
+    problems:
+      - IntervalUnion2 declares IEquatable but omits the typed Equals member.
+      - Typed/object Equals, GetHashCode and equality operators are absent.
+      - DecoratedInterval text requires reflexive C# equality and Hash but exposes no corresponding members/interfaces.
+      - IntervalUnion2 indexer and invalid component access behavior are unspecified.
+    required_action:
+      - Define complete value-semantics APIs and consistent Hash rules.
+      - Keep IEEE semantic equality as a separate named operation.
+      - Define indexer/accessor failure behavior.
+
+  - id: F-PR3-016
+    severity: medium
+    status: active
+    origin: introduced_by_added_design
+    title: Decoration propagation lacks a cap imposed by the resulting interval state
+    locations:
+      - doc/Design/detail/IntervalArithmetic.md §57.4
+      - doc/Design/detail/IntervalArithmetic.md §57.6
+    witness: >-
+      Adding two Com point intervals at double.MaxValue yields an unbounded bare enclosure.
+      min(input decorations, opDec) can still produce Com, although an unbounded interval
+      permits at most Dac.
+    required_action:
+      - Cap decoration by result state: Empty<=Trv, unbounded<=Dac, bounded<=Com.
+      - Centralize NaI/Ill and result canonicalization.
+      - Add finite-overflow decoration fixtures.
+
+  - id: F-PR3-017
+    severity: low
+    status: active
+    origin: introduced_by_consolidation
+    title: Phase 4A strict-less Empty behavior and BothEmpty inverse were omitted from the sole normative document
+    locations:
+      - doc/Design/detail/IntervalArithmetic.md §26.6
+      - doc/Design/detail/IntervalArithmetic.md §27
+    required_action:
+      - Restore the strict endpoint-wise less Empty truth table.
+      - Add BothEmpty <-> BothEmpty to overlap inverse mapping.
+      - Include all 16 inverse fixtures.
+
+held:
+  - item: finite Midpoint tie policy
+    status: explicitly_deferred
+    required_before: Phase 4A implementation
+  - item: elementary production backend selection
+    status: explicitly_deferred
+    required_before: corresponding Phase 4C/4D implementation
+  - item: Payne-Hanek table precision and proof artifact
+    status: explicitly_deferred
+    required_before: Phase 4D periodic implementation
+  - item: final decorated operation public surface
+    status: explicitly_deferred
+    required_before: Phase 4E decorated implementation
+  - item: parser resource-limit values
+    status: explicitly_deferred
+    required_before: Phase 4E parser implementation
+  - item: binary interchange reject/canonicalize details
+    status: explicitly_deferred
+    required_before: Phase 4E interchange implementation
+
+coverage:
+  - criterion: added_scope_requirement_conformance
+    disposition: checked_finding
+    findings: [F-PR3-010, F-PR3-013, F-PR3-017]
+  - criterion: numerical_and_set_correctness
+    disposition: checked_finding
+    findings: [F-PR3-010, F-PR3-011, F-PR3-012, F-PR3-014, F-PR3-016]
+  - criterion: public_api_and_value_semantics
+    disposition: checked_finding
+    findings: [F-PR3-015]
+  - criterion: empty_infinity_signed_zero
+    disposition: checked_finding
+    findings: [F-PR3-010, F-PR3-011, F-PR3-014, F-PR3-016, F-PR3-017]
+  - criterion: extended_reverse_cancellative_operations
+    disposition: checked_finding
+    findings: [F-PR3-010, F-PR3-013, F-PR3-014]
+  - criterion: elementary_domain_branch_cut
+    disposition: checked_finding
+    findings: [F-PR3-011, F-PR3-012]
+  - criterion: decorated_interval
+    disposition: checked_finding
+    findings: [F-PR3-015, F-PR3-016]
+  - criterion: parsing_interchange_resource_safety
+    disposition: checked_no_finding
+  - criterion: tdd_and_deterministic_tests
+    disposition: checked_finding
+    findings: [F-PR3-010, F-PR3-011, F-PR3-012, F-PR3-013, F-PR3-014, F-PR3-016, F-PR3-017]
+  - criterion: cross_architecture_backend_equivalence
+    disposition: checked_no_finding
+  - criterion: previous_core_regression_spot_checks
+    disposition: checked_no_finding
+  - criterion: scope_discipline
+    disposition: checked_no_finding
+  - criterion: license_third_party
+    disposition: checked_no_finding
+  - criterion: security_secrets
+    disposition: checked_no_finding
+  - criterion: report_handoff_accuracy
+    disposition: checked_finding
+    findings: [F-PR3-013, F-PR3-015, F-PR3-017]
+  - criterion: exact_head_ci
+    disposition: checked_no_finding
+    evidence: reviewed_pr_head has zero matching pull-request workflow runs and is correctly treated as CI未実施
+
+validation:
+  executable_build_or_tests:
+    applicable: false
+    reason: documentation-only delta; repository has no executable project or test target
+  exact_head_ci:
+    reviewed_head: 8e6e7499204fccf0643da82f274d1485dc0e3272
+    matching_runs: 0
+    status: CI未実施
+    substituted_other_sha: false
+  report_persistence:
+    report_commit: 1aad2aac5ca98c19bcb21a1f623a411432dd7cc0
+    handoff_commit: commit_pending
+
+report:
+  type: additional_design_review_report
+  path: reports/2026-08-30-pr-3-additional-design-review.md
+  verdict: fail
+  active_findings: 8
+
+blocked: []
+unexplored: []
+not_applicable:
+  - build/test result because no executable target exists
+  - workflow artifact inspection because no exact-head workflow run exists
+
+next_action:
+  type: design_rework
+  target: PR #3 newly added Phase 4 and consolidation scope
+  summary: Address F-PR3-010 through F-PR3-017 without reopening unchanged four-arithmetic work.
+  required_actions:
+    - Resolve IntervalUnion2 component/open-boundary semantics.
+    - Complete Atan2 branch-cut matrix.
+    - Complete general Pow zero-boundary rules.
+    - Restore one-sided extended division.
+    - Correct cancellative Empty cases.
+    - Complete union/decorated equality APIs.
+    - Cap decoration by result state.
+    - Restore relation edge contracts lost in consolidation.
+    - Add a correction record for inaccurate consolidation-preservation claims.
+    - Request same-reviewer fix verification on a new immutable HEAD.
+  merge_allowed: false
+
+transport:
+  method: repository_file
+  packet_path: reports/2026-08-30-pr-3-additional-design-review-handoff.yaml
+  final_publication_note: >-
+    This packet cannot contain its own future commit SHA. The final PR current HEAD and
+    exact-head workflow evidence must be checked after this file is committed and recorded
+    in the PR body/review comment. No workflow run from another SHA may be substituted.

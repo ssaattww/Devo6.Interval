@@ -1,0 +1,188 @@
+schema_version: 3
+producer:
+  skill: chat-implementation-worker
+  mode: documentation_consolidation
+  generated_at: 2026-08-30T18:11:00+09:00
+
+repository: ssaattww/Devo6.Interval
+issue_or_pr: "PR #3"
+branch: docs/detailed-interval-arithmetic-design
+base_ref: main
+base_sha: ad5c058f8a4164b0c7d0763c65246914ea5d1c03
+
+target:
+  consolidation_base_head: 8df7802b725738578cd93e27cdf64bd71b2b0ece
+  consolidated_technical_head: fd4d12f0da9e4f883454281190726babb11479a2
+  report_commit: a05293a922e9df3ae7e9545d631b0e93aea606f1
+  handoff_commit: commit_pending
+  final_pr_head: pending_after_handoff
+
+request:
+  summary: Consolidate the detailed interval-arithmetic design into one file where possible.
+  interpretation: >-
+    Consolidate all files under doc/Design/detail into a single authoritative
+    doc/Design/detail/IntervalArithmetic.md. Reports remain separate because repository process
+    requires durable work reports and handoff artifacts.
+
+scope:
+  - Merge the four-arithmetic detailed design and Revision 3 corrections.
+  - Merge the Phase 4A-4E roadmap and feature-specific detailed designs.
+  - Remove superseded detail-design files and index.
+  - Remove obsolete .gitkeep.
+  - Preserve historical review decisions as content, without transferring prior PASS to the new HEAD.
+  - Update PR #3 summary and exact-head CI evidence after final commit.
+
+non_goals:
+  - Modify basic design.
+  - Modify source or tests.
+  - Add CI workflow before an executable target exists.
+  - Change numerical semantics beyond resolving existing Revision 3 precedence into the unified text.
+  - Merge the pull request.
+
+write_boundary:
+  allowed:
+    - doc/Design/detail/**
+    - reports/2026-08-30-interval-detailed-design-consolidation.md
+    - reports/2026-08-30-interval-detailed-design-consolidation-handoff.yaml
+    - PR #3 body and top-level comment
+  untouched:
+    - doc/Design/basic/**
+    - src/**
+    - tests/**
+    - .github/workflows/**
+    - tasks/**
+
+result:
+  authoritative_detail_file: doc/Design/detail/IntervalArithmetic.md
+  detail_directory_file_count: 1
+  detail_directory_files:
+    - doc/Design/detail/IntervalArithmetic.md
+  consolidated_blob_sha: cff4324de49ad0070fa0d0cff404951b8956b1d0
+  consolidated_size_bytes: 68292
+
+commits:
+  - sha: ec72a8d634d8b59ad1ce977c65a7f04a94c499c4
+    purpose: rewrite IntervalArithmetic.md as the single unified detailed design
+  - sha: 8e9aa42524c52e644b1b7bc9359dd656363f2a6d
+    purpose: remove merged Revision 3 file
+  - sha: fccaa7029f736cb34dcd358a3905e69d4035bfc4
+    purpose: remove merged Phase 4 roadmap
+  - sha: ab240c093aa135c4b5ebfa8518b8aa7cb205c7d9
+    purpose: remove merged set/numeric design
+  - sha: f2bc5fa3bffb208ef629d07905ed63b2a41d4ce1
+    purpose: remove merged math-function design
+  - sha: 46878b24bc5e67a106cb4a731745f5f4c973489a
+    purpose: remove merged advanced-feature design
+  - sha: 8b1cc2c11fc3df6599fc9c994fe606b5aa4ffb3c
+    purpose: remove obsolete detailed-design index
+  - sha: fd4d12f0da9e4f883454281190726babb11479a2
+    purpose: remove unnecessary .gitkeep; technical consolidation complete
+  - sha: a05293a922e9df3ae7e9545d631b0e93aea606f1
+    purpose: persist detailed consolidation report
+  - sha: commit_pending
+    purpose: persist this handoff packet
+
+normative_content_preserved:
+  arithmetic:
+    - IEEE 1788.1-oriented semantics
+    - negated-lower internal representation
+    - Empty/Entire/Zero
+    - directed add/sub/mul/div
+    - subnormal scaling and residual tie handling
+    - multiplication/division sign tables
+  revision3:
+    - Empty public Lower +Infinity
+    - Empty public Upper -Infinity
+    - exact-rational finite-overflow branch
+    - corrected ITF1788 constructor source mapping
+    - repository-defined IsSingleton matrix
+    - conformance extraction/gate policy
+  validation:
+    - exact rational primary oracle
+    - pinned inari/kv/ITF1788 references
+    - x64/ARM64 correctness matrix
+    - exact-head CI-only evidence
+    - deterministic boundary fixtures
+  simd_native:
+    - independent ISA/FMA capability checks
+    - AVX-512 four-interval batch layout
+    - scalar bitwise-equivalent fallback
+    - native backend deferred decision gate
+  phase4:
+    - set/relation/numeric functions
+    - algebraic and elementary functions
+    - certified endpoint kernel boundary
+    - MPFR reference strategy
+    - periodic fixed-point range reduction
+    - IntervalUnion2 and extended division
+    - DecoratedInterval and NaI
+    - exact/outward parsing and interchange
+    - interval splitting
+
+validation:
+  directory_check:
+    result: passed
+    evidence: >-
+      GitHub contents API for doc/Design/detail returned only IntervalArithmetic.md after consolidation.
+  compare_check:
+    result: passed
+    base: 8df7802b725738578cd93e27cdf64bd71b2b0ece
+    head: fd4d12f0da9e4f883454281190726babb11479a2
+    ahead_by: 8
+    behind_by: 0
+    source_test_workflow_changes: false
+  executable_validation:
+    result: not_applicable
+    reason: documentation-only; repository has no executable project/test target
+  ci:
+    final_head: pending_after_handoff
+    matching_workflow_runs: pending_after_handoff
+    status: pending_exact_head_check
+    substituted_other_sha: false
+
+review:
+  prior_pass_transferable: false
+  reason: >-
+    The file layout and authoritative detailed-design text were rewritten and Phase 4 content is now
+    embedded in the same normative file. Prior PASS remains historical evidence only for the prior
+    immutable reviewed scope.
+  next_review:
+    type: independent detailed-design review
+    target: final PR current HEAD
+    primary_artifact: doc/Design/detail/IntervalArithmetic.md
+    required_checks:
+      - no normative content lost during consolidation
+      - Revision 3 corrections correctly integrated
+      - no contradictory old precedence text remains normative
+      - Phase 0-4E boundaries remain coherent
+      - directed-rounding algorithms remain implementation-complete
+      - Phase 4 semantics/APIs remain complete
+      - conformance/oracle/CI/artifact gates remain traceable
+
+report:
+  path: reports/2026-08-30-interval-detailed-design-consolidation.md
+  commit: a05293a922e9df3ae7e9545d631b0e93aea606f1
+
+remaining_risks:
+  - Unified design has not yet received independent review at its final HEAD.
+  - Consolidation intentionally removes precedence documents, so review should specifically check for omitted edge cases.
+  - Elementary-function production backend remains a later implementation decision.
+
+next_action:
+  type: independent_design_review
+  target_skill: chat-review-worker
+  target: PR #3 final current HEAD
+  instructions:
+    - Review doc/Design/detail/IntervalArithmetic.md as the sole detailed-design artifact.
+    - Compare against historical review requirements and reports as needed.
+    - Do not assume prior PASS transfers to this HEAD.
+    - Check only workflow runs whose head_sha equals the current PR HEAD.
+    - If no matching run exists, report CI未実施 and do not substitute another SHA.
+    - Do not merge.
+
+transport:
+  method: repository_file
+  packet_path: reports/2026-08-30-interval-detailed-design-consolidation-handoff.yaml
+  final_publication_note: >-
+    Final PR HEAD and exact-head workflow state are published in PR #3 after this packet is committed,
+    because this file cannot contain its own future persistence commit SHA.

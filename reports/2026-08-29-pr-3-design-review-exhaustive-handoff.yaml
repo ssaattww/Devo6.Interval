@@ -1,0 +1,340 @@
+schema_version: 3
+producer:
+  skill: chat-review-worker
+  mode: exhaustive_initial_review
+  generated_at: 2026-08-29T21:00:00+09:00
+
+repository: ssaattww/Devo6.Interval
+issue_or_pr: "PR #3"
+branch: docs/detailed-interval-arithmetic-design
+base_ref: main
+base_sha: ad5c058f8a4164b0c7d0763c65246914ea5d1c03
+
+target:
+  technical_reviewed_head: da6e2ae04d35b01acfb307953a093c81c15342b8
+  commit_range: ad5c058f8a4164b0c7d0763c65246914ea5d1c03..da6e2ae04d35b01acfb307953a093c81c15342b8
+  pr_head_at_rerun_start: 9936d9f2d5bb270ba03938fdecb6dde8cc0541f1
+  review_report_commit: af6638745b1bd7c12a10a0565c206a84d87c6029
+  review_handoff_commit: commit_pending
+  note: >-
+    The PR head after the technical design contained only the previous review-report
+    commit. No design implementation changed after da6e2ae. This handoff cannot contain
+    its own future commit SHA; final PR head and exact-head CI evidence are recorded in
+    the PR review/comment after publication.
+
+review:
+  mode: exhaustive_initial_review
+  verdict: fail
+  supersedes_report: reports/2026-08-29-pr-3-design-review.md
+  authoritative_report: reports/2026-08-29-pr-3-design-review-exhaustive.md
+  reviewer:
+    identity: ChatGPT GPT-5.6 Sol
+    role: normal_reviewer
+    continuity:
+      previous_normal_review: true
+      same_role: true
+      reason: user requested a full rerun to exhaust findings in one pass
+    independence:
+      implemented_design: false
+      implemented_review_fix: false
+      prior_write_scope:
+        - reports/2026-08-29-pr-3-design-review.md
+      note: prior write was review administration only, not design implementation
+
+scope:
+  - phase ordering and requirement traceability
+  - public Interval API candidate and value semantics
+  - internal negated-lower representation
+  - Empty, Entire, signed zero, equality and Hash
+  - all four arithmetic sign classifications and zero-boundary semantics
+  - managed outward rounding, overflow, underflow and subnormal behavior
+  - exact rational and external reference oracles
+  - IEEE 1788.1 conformance strategy
+  - deterministic, random and differential tests
+  - x64 and ARM64 validation evidence
+  - AVX-512, AVX2, SSE2 and ARM64 capability design
+  - CI failure diagnostics and exact-head evidence
+  - previous review accuracy
+
+positive_findings:
+  - User phase order is coherent and preserved.
+  - Multiplication sign-classification table is correct against endpoint extrema and pinned inari.
+  - Division positive, negative, zero-only, one-sided-zero and cross-zero tables match intended set semantics and pinned inari.
+  - The [-Lower, Upper] representation, Empty, Zero and signed-zero normalization are coherent.
+  - AVX-512 four-interval Vector512 packed-rounding concept matches the .NET 10 API surface.
+  - Exact rational oracle is appropriately independent from production rounding logic.
+  - Reference SHAs for inari and kv are current repository HEADs as of this review.
+
+findings:
+  - id: F-PR3-001
+    severity: high
+    status: active
+    origin: introduced_by_change
+    locations:
+      - doc/Design/detail/IntervalArithmetic.md §8.6
+      - doc/Design/detail/IntervalArithmetic.md §8.7
+    title: Directed-rounding specification is not implementation-complete
+    problem:
+      - >-
+        Multiplication below abs(product) < 2^-969 names scaling by 2^537 but does
+        not define the scaled comparison and residual tie condition that decides
+        NextUp/NextDown.
+      - >-
+        Division says q*y < x / q*y >= x conceptually while relying on exact-product
+        decomposition; it omits the required high-product equality plus residual-sign
+        tie comparison.
+      - >-
+        Division lists 2^-969, 2^918, 2^105 and 2^-1074 but omits the large-denominator
+        underflow branch returning direction/sign-specific zero or minimum subnormal.
+    numerical_witness:
+      x: 0.025395755270045856
+      y: 9.884361488333468e-07
+      q_nearest: 25692.86372217418
+      rounded_q_times_y_equals_x: true
+      exact_q_times_y_relation_to_x: less
+      required_upward_result: 25692.863722174185
+      implication: rounded q*y alone cannot decide the upward correction
+    reference_conditions:
+      multiply_up_scaled: "t < s || (t == s && s2 > 0) -> successor(r)"
+      multiply_down_scaled: "t > s || (t == s && s2 < 0) -> predecessor(r)"
+      divide_up: "r < x || (r == x && r2 < 0) -> successor(q)"
+      divide_down: "r > x || (r == x && r2 > 0) -> predecessor(q)"
+      large_denominator_up: "negative quotient -> +0; positive quotient -> +2^-1074"
+      large_denominator_down: "negative quotient -> -2^-1074; positive quotient -> +0"
+    required_action:
+      - Define implementation-complete multiplication and division pseudocode.
+      - Define all residual tie conditions.
+      - Define small-numerator scaling and large-denominator early returns.
+      - Define overflow direction saturation and equality-at-threshold behavior.
+      - Ensure every allowed operand pair maps to one unique directed binary64 result.
+
+  - id: F-PR3-002
+    severity: medium
+    status: active
+    origin: introduced_by_change
+    locations:
+      - doc/Design/detail/IntervalArithmetic.md §4.2
+      - doc/Design/detail/IntervalArithmetic.md §15.4
+      - doc/Design/detail/IntervalArithmetic.md §15.5
+    title: SIMD capability model does not separate x86 FMA from AVX2/SSE2
+    problem: >-
+      .NET exposes Fma.IsSupported as an independent ISA capability. AVX2 or SSE2
+      support alone does not guarantee vector FMA residual instructions.
+    required_action:
+      - Define AVX-512 packed, AVX2+FMA, AVX2-no-FMA, SSE2-no-FMA, ARM64 and scalar fallback capability rows.
+      - For non-FMA x86, choose vectorized error-free product, add/sub-only SIMD with scalar mul/div fallback, or reject the backend after benchmarking.
+
+  - id: F-PR3-003
+    severity: low
+    status: withdrawn_erratum
+    origin: previous_review_error
+    title: Previous exact-head CI handoff-state finding is withdrawn
+    reason: >-
+      A handoff packet cannot know its own future persistence commit SHA. The packet
+      correctly marked final publication and CI evidence pending, and the PR completion
+      comment recorded final HEAD da6e2ae with zero matching workflow runs and CI未実施.
+      No other-SHA run was substituted. Therefore the previous handoff-state complaint
+      was over-strong.
+
+  - id: F-PR3-004
+    severity: medium
+    status: active
+    origin: introduced_by_change
+    locations:
+      - doc/Design/basic/IntervalArithmetic.md §13
+      - doc/Design/detail/IntervalArithmetic.md §12
+      - doc/Design/detail/IntervalArithmetic.md §14
+    title: IEEE 1788.1 conformance-test introduction is missing
+    problem: >-
+      The accepted basic design explicitly carried IEEE 1788.1 conformance-test
+      introduction into detailed design. PR #3 defines exact-rational, differential and
+      random tests but does not define a standards conformance corpus/matrix or an
+      explicit alternative.
+    required_action:
+      - Pin a conformance corpus or define an equivalent IEEE 1788.1 matrix.
+      - State Phase 1 applicable bare binary64 operations and intentional Phase 4 deferrals.
+      - Define API/canonical-zero adaptation and CI/artifact evidence.
+
+  - id: F-PR3-005
+    severity: medium
+    status: active
+    origin: introduced_by_change
+    locations:
+      - doc/Design/detail/IntervalArithmetic.md §12.4
+      - doc/Design/detail/IntervalArithmetic.md §14.2
+    title: Reference-oracle responsibility and execution mechanism are not reproducible
+    problem:
+      - >-
+        kv is listed alongside inari for Empty/Entire semantics, but pinned kv ordinary
+        division throws domain_error whenever the denominator contains zero; it is not
+        compatible with Devo6/inari set-based zero-crossing semantics.
+      - >-
+        The design does not say how C# tests actually obtain pinned inari/kv results,
+        even though mismatch artifacts must contain all backend results.
+    required_action:
+      - Assign exact-rational oracle as primary mathematical oracle.
+      - Assign inari as interval semantic/differential oracle.
+      - Restrict kv to directed-rounding primitive/compatible finite endpoint cases.
+      - Define a reproducible pinned reference harness or committed golden-corpus generator with toolchain metadata and I/O format.
+
+  - id: F-PR3-006
+    severity: medium
+    status: active
+    origin: introduced_by_change
+    locations:
+      - doc/Design/detail/IntervalArithmetic.md §4.2
+      - doc/Design/detail/IntervalArithmetic.md §13
+      - doc/Design/detail/IntervalArithmetic.md §14.2
+    title: CI design does not implement the declared x64/ARM64 correctness gate
+    problem: >-
+      Phase 1 targets x64 and ARM64 and the API-freeze gate requires equal canonical
+      results, but the CI section does not require an architecture matrix. Current
+      GitHub-hosted Linux ARM64 runners make this directly testable.
+    required_action:
+      - Require the same deterministic/oracle suite on Linux x64 and Linux ARM64.
+      - Preserve per-architecture failure diagnostics.
+      - If bit-pattern output is compared across jobs, define a deterministic result artifact/corpus.
+
+  - id: F-PR3-007
+    severity: medium
+    status: active
+    origin: introduced_by_change
+    locations:
+      - doc/Design/detail/IntervalArithmetic.md §12.2
+      - doc/Design/detail/IntervalArithmetic.md §12.3
+      - doc/Design/detail/IntervalArithmetic.md §12.5
+    title: Deterministic tests omit rounding-algorithm branch boundaries and residual ties
+    problem: >-
+      Generic subnormal/min-normal/overflow tests do not guarantee coverage of the exact
+      thresholds and equality/residual branches introduced by the production algorithm.
+      Random testing is unlikely to hit them reliably.
+    required_action:
+      - Add below/equal/above tests around 2^-969 and 2^918.
+      - Cover all sign/direction zero versus minimum-subnormal returns.
+      - Cover multiplication scaled <, >, equality+residual branches.
+      - Cover division rounded-product equality with positive and negative residual.
+      - Cover exact no-correction and positive/negative overflow Up/Down cases.
+
+  - id: F-PR3-008
+    severity: low
+    status: active
+    origin: introduced_by_change
+    locations:
+      - doc/Design/basic/IntervalArithmetic.md §10.1
+      - doc/Design/basic/IntervalArithmetic.md §13
+      - doc/Design/detail/IntervalArithmetic.md §3
+      - doc/Design/detail/IntervalArithmetic.md §20
+    title: Native-backend decision from basic design is no longer traceable
+    problem: >-
+      The basic design retained managed-only versus native-backend adoption as a
+      benchmark-driven future decision. Detailed design correctly excludes native calls
+      from Phase 1 but does not explicitly reject or defer the decision in later phases.
+    required_action:
+      - Explicitly reject native backend for the roadmap, or identify the later benchmark/phase where it may be reconsidered.
+      - No native implementation is required for this PR.
+
+coverage:
+  - criterion: requirement_design_conformance
+    disposition: checked_finding
+    findings: [F-PR3-004, F-PR3-008]
+  - criterion: numerical_correctness_edge_cases
+    disposition: checked_finding
+    findings: [F-PR3-001]
+  - criterion: scope_discipline
+    disposition: checked_no_finding
+  - criterion: changed_files_direct_dependencies
+    disposition: checked_finding
+    findings: [F-PR3-005]
+  - criterion: public_api_compatibility
+    disposition: checked_no_finding
+  - criterion: internal_representation_value_semantics
+    disposition: checked_no_finding
+  - criterion: multiplication_division_classification
+    disposition: checked_no_finding
+  - criterion: simd_capability_design
+    disposition: checked_finding
+    findings: [F-PR3-002]
+  - criterion: error_handling_domain_semantics
+    disposition: checked_no_finding
+  - criterion: security_secrets
+    disposition: not_applicable
+  - criterion: tdd_deterministic_test_adequacy
+    disposition: checked_finding
+    findings: [F-PR3-007]
+  - criterion: independent_oracle_adequacy
+    disposition: checked_finding
+    findings: [F-PR3-005]
+  - criterion: ieee_conformance_validation
+    disposition: checked_finding
+    findings: [F-PR3-004]
+  - criterion: x64_arm64_validation
+    disposition: checked_finding
+    findings: [F-PR3-006]
+  - criterion: failure_diagnostics
+    disposition: checked_no_finding
+  - criterion: exact_head_ci
+    disposition: checked_no_finding
+    evidence: >-
+      Matching pull-request workflow run count was zero for technical head da6e2ae and
+      rerun-start head 9936d9f. State is CI未実施. No other SHA was substituted.
+  - criterion: report_handoff_accuracy
+    disposition: checked_finding
+    findings: [F-PR3-003]
+    note: finding is a corrective erratum to the prior review, not an implementation defect
+  - criterion: regression_maintainability
+    disposition: checked_finding
+    findings: [F-PR3-001, F-PR3-002, F-PR3-004, F-PR3-005, F-PR3-006, F-PR3-007]
+
+validation:
+  repository_build_or_tests:
+    applicable: false
+    reason: documentation-only PR; no executable project/test target exists
+  workflow_directory:
+    state: .gitkeep_only
+  exact_head_ci:
+    technical_head: da6e2ae04d35b01acfb307953a093c81c15342b8
+    matching_runs: 0
+    status: CI未実施
+    substituted_other_sha: false
+  reference_freshness:
+    inari:
+      pinned_sha: 18b83a571d7681c76067bc38d90a74e8be29f545
+      repository_head_same: true
+    kv:
+      pinned_sha: c7f8f2324a0e403cca6b39f46088a22843d440db
+      repository_head_same: true
+
+report:
+  path: reports/2026-08-29-pr-3-design-review-exhaustive.md
+  outcome: created
+  supersedes: reports/2026-08-29-pr-3-design-review.md
+
+blocked: []
+held: []
+unexplored:
+  - >-
+    The copyrighted IEEE standard text itself was not reproduced; the accepted basic
+    design is treated as repository-authoritative and conformance was cross-checked via
+    the pinned inari conformance documentation/reference structure.
+
+next_action:
+  type: design_rework
+  target: PR #3
+  summary: Address all seven active findings in one design correction pass, then request fix verification.
+  required_actions:
+    - Complete directed-rounding pseudocode including residual ties and subnormal branches.
+    - Define FMA/ISA capability matrix.
+    - Define IEEE 1788.1 conformance strategy.
+    - Define exact-rational/inari/kv roles and reproducible reference harness.
+    - Define x64/ARM64 CI matrix.
+    - Add deterministic threshold/tie fixtures.
+    - Close or defer native-backend decision explicitly.
+    - Update design report and implementation handoff consistently.
+  merge_allowed: false
+
+transport:
+  method: repository_file
+  packet_path: reports/2026-08-29-pr-3-design-review-exhaustive-handoff.yaml
+  final_publication_note: >-
+    Final PR HEAD and exact-head workflow evidence are recorded after this packet is
+    committed, because this packet cannot contain its own future commit SHA.

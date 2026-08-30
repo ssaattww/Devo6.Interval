@@ -1,0 +1,367 @@
+schema_version: 3
+producer:
+  skill: chat-implementation-worker
+  mode: follow_up_documentation_implementation
+  generated_at: 2026-08-30T18:30:00+09:00
+
+repository: ssaattww/Devo6.Interval
+issue_or_pr: "PR #3"
+task_id: null
+branch: docs/detailed-interval-arithmetic-design
+base_ref: main
+base_sha: ad5c058f8a4164b0c7d0763c65246914ea5d1c03
+
+target:
+  starting_pr_head: f60f78e7e1637d587d53c4f926fb05cf4ce0f3b8
+  technical_design_head: 01f379255e8677c2cd78a1ea696bf2a925ff7f89
+  report_commit: 4ffc23b83e657d7c2f7e8448ce896ebebecf1058
+  handoff_commit: commit_pending
+  commit_range: f60f78e7e1637d587d53c4f926fb05cf4ce0f3b8..4ffc23b83e657d7c2f7e8448ce896ebebecf1058
+  note: >-
+    This packet cannot contain its own future persistence commit SHA. The final PR HEAD
+    and matching workflow-run state are recorded in the PR body/comment after this file
+    is committed.
+
+verification:
+  capability: remote_ci_only
+  capability_evidence:
+    - Repository reads and writes were performed through the required GitHub connector.
+    - The repository has no executable source project, test target, or pull-request workflow.
+    - The current change is documentation-only.
+  documentation_validation:
+    state: completed
+    technical_head: 01f379255e8677c2cd78a1ea696bf2a925ff7f89
+    evidence:
+      - Existing four-arithmetic normative documents and Revision 3 precedence were inspected.
+      - The current PR review boundary and prior immutable reviewed HEAD were inspected.
+      - Pinned inari set, boolean, numeric, integer, basic, arithmetic, overlap, and elementary sources were inspected.
+      - Pinned kv directed-rounding and square-root source was inspected.
+      - The five-commit design delta was compared against the starting PR HEAD.
+  executable_validation:
+    state: not_applicable
+    reason: no executable project or test target exists and no source code was changed
+  final_publication:
+    state: pending_after_handoff_commit
+    sequence:
+      - commit handoff
+      - read current PR HEAD
+      - check workflow runs with exactly matching head_sha
+      - update PR body
+      - post concise PR comment
+
+ci:
+  required_for_documentation_change: false
+  workflow_present: false
+  workflow_directory_state: .gitkeep_only
+  final_target_head_sha: pending
+  matching_runs: pending
+  execution_status: pending_exact_head_check
+  substituted_other_sha: false
+  artifacts: []
+
+authoritative_requirements:
+  - source: user_instruction
+    reference: current conversation
+    summary: Design the portions of the interval arithmetic library beyond the four basic arithmetic operations.
+  - source: repository_basic_design
+    reference: doc/Design/basic/IntervalArithmetic.md
+    summary: Preserve IEEE 1788.1-oriented semantics, double endpoints, Empty/Entire, outward rounding, and negated-lower representation.
+  - source: repository_detailed_design
+    reference: doc/Design/detail/IntervalArithmetic.md and IntervalArithmetic.Revision3.md
+    summary: Preserve the reviewed scalar reference, API-freeze, SIMD, conformance, exact-oracle, x64/ARM64, and exact-head CI contracts.
+  - source: repository_instruction
+    reference: project instructions
+    summary: Use GitHub connector, persist a detailed report, update the PR, comment with a concise report, check exact-head CI only, and do not merge.
+  - source: uploaded_skill
+    reference: chatgpt-worker-skills.zip
+    summary: Resolve scope and write boundary, keep commits reviewable, distinguish documentation validation from executable testing, and persist a schema-v3 handoff.
+
+development_policy:
+  method: validation_only_documentation
+  tdd_applicable_to_current_change: false
+  tdd_required_for_future_source_implementation: true
+  diagnostic_artifact_workflow_action: deferred_to_first_executable_phase
+  reason: >-
+    No executable target exists. The new design specifies that each future implementation
+    phase must add failing tests first and preserve test output, stdout, stderr, reference
+    diagnostics, and function-specific logs as artifacts.
+
+scope:
+  - Define the Phase 4A to Phase 4E implementation roadmap.
+  - Design set operations and named interval relations.
+  - Design interval overlap classification.
+  - Design numeric properties and integer-valued interval functions.
+  - Design reciprocal, square, square root, integer power/root, and fused multiply-add.
+  - Design exponential, logarithmic, hyperbolic, trigonometric, atan2, and positive-base general power semantics.
+  - Define certified endpoint-kernel and MPFR reference requirements.
+  - Design a two-component interval-union type and extended division.
+  - Design reverse multiplication and cancellative operations.
+  - Design decorated intervals and NaI without mixing them into bare Interval.
+  - Design exact/outward parsing, formatting, binary interchange, and interval splitting.
+  - Define TDD, conformance, cross-architecture, backend-equivalence, and diagnostic-artifact gates.
+
+non_goals:
+  - Implement production C# source.
+  - Add solution or project files.
+  - Add tests, benchmarks, reference adapters, or generated corpora.
+  - Add or execute a CI workflow.
+  - Implement SIMD or native code.
+  - Implement Affine Arithmetic, Taylor Models, root finding, optimization, or a complete solver.
+  - Merge PR #3.
+
+write_boundary:
+  allowed:
+    - path_or_operation: doc/Design/detail/IntervalNonArithmetic.Roadmap.md
+      reason: requested post-four-arithmetic roadmap
+    - path_or_operation: doc/Design/detail/IntervalSetAndNumeric.md
+      reason: requested set/relation/numeric detailed design
+    - path_or_operation: doc/Design/detail/IntervalMathFunctions.md
+      reason: requested algebraic and elementary-function detailed design
+    - path_or_operation: doc/Design/detail/IntervalAdvancedFeatures.md
+      reason: requested advanced-feature detailed design
+    - path_or_operation: doc/Design/detail/README.md
+      reason: authoritative reading order and review-boundary update
+    - path_or_operation: reports/2026-08-30-interval-non-arithmetic-detailed-design.md
+      reason: required durable detailed report
+    - path_or_operation: reports/2026-08-30-interval-non-arithmetic-detailed-design-handoff.yaml
+      reason: required continuation packet
+    - path_or_operation: PR #3 body and top-level comment
+      reason: required publication and concise summary
+  forbidden:
+    - path_or_operation: src/**
+      reason: design-only task
+    - path_or_operation: tests/**
+      reason: design-only task
+    - path_or_operation: .github/workflows/**
+      reason: no executable target exists yet
+    - path_or_operation: merge
+      reason: repository owner performs merge
+
+files:
+  changed:
+    - path: doc/Design/detail/IntervalNonArithmetic.Roadmap.md
+      purpose: Phase 4A-4E sequence, responsibility split, accuracy levels, and common gates
+      commit: 6cc15315bc24c1be30a25eea7286ad2f793acb41
+    - path: doc/Design/detail/IntervalSetAndNumeric.md
+      purpose: set operations, relations, overlap, measures, basic and integer functions
+      commit: a226fe92064d2702ce2e2cd2259d86b8ac5d007a
+    - path: doc/Design/detail/IntervalMathFunctions.md
+      purpose: algebraic and elementary functions, certified kernels, range reduction, and references
+      commit: b36957a83d20714f6401714f4dbffc83b030efe7
+    - path: doc/Design/detail/IntervalAdvancedFeatures.md
+      purpose: union, extended/reverse operations, decoration, parsing, interchange, and splitting
+      commit: f9f744ae8ec9ea5970fefa6b496fdcef2923eb09
+    - path: doc/Design/detail/README.md
+      purpose: reading order, precedence, and explicit new-review boundary
+      commit: 01f379255e8677c2cd78a1ea696bf2a925ff7f89
+    - path: reports/2026-08-30-interval-non-arithmetic-detailed-design.md
+      purpose: durable work report
+      commit: 4ffc23b83e657d7c2f7e8448ce896ebebecf1058
+    - path: reports/2026-08-30-interval-non-arithmetic-detailed-design-handoff.yaml
+      purpose: schema-v3 continuation packet
+      commit: commit_pending
+  inspected:
+    - path: doc/Design/basic/IntervalArithmetic.md
+      purpose: authoritative base semantics
+    - path: doc/Design/detail/IntervalArithmetic.md
+      purpose: reviewed detailed four-arithmetic design
+    - path: doc/Design/detail/IntervalArithmetic.Revision3.md
+      purpose: normative Empty/conformance/oracle corrections
+    - path: tasks/tasks-status.md
+      purpose: confirm no accepted task entry exists
+    - path: .github/workflows
+      purpose: confirm no executable workflow exists
+    - path: unageek/inari@18b83a571d7681c76067bc38d90a74e8be29f545/src/set_op.rs
+      purpose: set-operation semantics and negated-lower formulas
+    - path: unageek/inari@18b83a571d7681c76067bc38d90a74e8be29f545/src/boolean.rs
+      purpose: relation and Empty semantics
+    - path: unageek/inari@18b83a571d7681c76067bc38d90a74e8be29f545/src/numeric.rs
+      purpose: width, midpoint, radius, magnitude, and mignitude behavior
+    - path: unageek/inari@18b83a571d7681c76067bc38d90a74e8be29f545/src/absmax.rs
+      purpose: abs and pointwise min/max behavior
+    - path: unageek/inari@18b83a571d7681c76067bc38d90a74e8be29f545/src/integer.rs
+      purpose: floor, ceiling, rounding, truncation, and sign
+    - path: unageek/inari@18b83a571d7681c76067bc38d90a74e8be29f545/src/basic.rs
+      purpose: reciprocal, square, sqrt, FMA, reverse and cancellative operations
+    - path: unageek/inari@18b83a571d7681c76067bc38d90a74e8be29f545/src/elementary.rs
+      purpose: MPFR kernels and interval extensions for elementary functions
+    - path: unageek/inari@18b83a571d7681c76067bc38d90a74e8be29f545/src/overlap.rs
+      purpose: 16-state overlap relation
+    - path: mskashi/kv@c7f8f2324a0e403cca6b39f46088a22843d440db/kv/rdouble-nohwround.hpp
+      purpose: directed square-root scaling and comparison
+  intentionally_untouched:
+    - path_or_area: doc/Design/detail/IntervalArithmetic.md
+      reason: prior reviewed normative scope remains unchanged
+    - path_or_area: doc/Design/detail/IntervalArithmetic.Revision3.md
+      reason: prior reviewed normative revision remains unchanged
+    - path_or_area: source, tests, workflow
+      reason: current task is detailed design only
+
+implementation:
+  outcome: completed_pending_publication
+  technical_head: 01f379255e8677c2cd78a1ea696bf2a925ff7f89
+  report_commit: 4ffc23b83e657d7c2f7e8448ce896ebebecf1058
+  commits:
+    - sha: 6cc15315bc24c1be30a25eea7286ad2f793acb41
+      purpose: define post-arithmetic roadmap
+    - sha: a226fe92064d2702ce2e2cd2259d86b8ac5d007a
+      purpose: design set and numeric operations
+    - sha: b36957a83d20714f6401714f4dbffc83b030efe7
+      purpose: design algebraic and elementary functions
+    - sha: f9f744ae8ec9ea5970fefa6b496fdcef2923eb09
+      purpose: design advanced interval features
+    - sha: 01f379255e8677c2cd78a1ea696bf2a925ff7f89
+      purpose: update detailed-design reading order and review boundary
+    - sha: 4ffc23b83e657d7c2f7e8448ce896ebebecf1058
+      purpose: persist detailed work report
+  summary:
+    - The requested post-four-arithmetic area is split into five implementation phases.
+    - Public responsibilities are split among Interval, IntervalMath, IntervalConstants, IntervalUnion2, DecoratedInterval, and IntervalContractor.
+    - Set/numeric functions have concrete formulas and Empty/Infinity/signed-zero behavior.
+    - Algebraic and elementary functions have domain, monotonicity, extrema/pole, certified-kernel, and reference requirements.
+    - Advanced union, decoration, parsing, interchange, and splitting contracts are defined without changing the bare Interval model.
+    - The prior design PASS is explicitly not applied to the new files.
+
+validation:
+  commands: []
+  checks:
+    - name: repository and task context
+      result: passed
+      evidence: PR, branch, base design, task file, and workflow directory inspected
+    - name: pinned reference inspection
+      result: passed
+      evidence: inari and kv source files inspected at fixed SHAs
+    - name: documentation-only delta
+      result: passed
+      evidence: >-
+        Compare f60f78e7e1637d587d53c4f926fb05cf4ce0f3b8..01f379255e8677c2cd78a1ea696bf2a925ff7f89
+        reports five commits, four added design files, one modified index, and no source/test/workflow change.
+    - name: build and tests
+      result: not_applicable
+      evidence: no executable source or test target exists
+  required_failure_diagnostics_for_future_work:
+    - test results
+    - stdout and stderr
+    - diagnostic runner log
+    - architecture/runtime/CPU features
+    - function/domain/sign/quadrant classification
+    - endpoint and reference bit patterns
+    - periodic reduction and critical-point decisions
+    - parser exact-rational and resource-limit diagnostics
+    - union, decoration, and split state
+
+review:
+  previous_review:
+    verdict: pass
+    reviewed_head: 13cf07cfcdf01205ab4466a99abd380fd1f1d103
+    scope: prior four-arithmetic detailed design only
+    transferable_to_current_change: false
+  required_review:
+    mode: independent_initial_review_for_expanded_scope
+    target_head: pending_final_publication
+    files:
+      - doc/Design/detail/IntervalNonArithmetic.Roadmap.md
+      - doc/Design/detail/IntervalSetAndNumeric.md
+      - doc/Design/detail/IntervalMathFunctions.md
+      - doc/Design/detail/IntervalAdvancedFeatures.md
+      - doc/Design/detail/README.md
+    required_coverage:
+      - API naming and responsibility boundaries
+      - Empty/Infinity/signed-zero semantics
+      - set and relation formulas
+      - numeric-property contracts
+      - algebraic domain and tight endpoint algorithms
+      - elementary backend and MPFR reference strategy
+      - periodic critical-point and branch-cut handling
+      - extended/reverse division and union canonicalization
+      - decorated equality and propagation
+      - parsing/interchange/splitting contracts
+      - TDD, conformance, x64/ARM64, backend-equivalence, and artifact gates
+    merge_allowed: false
+
+report:
+  report_type: implementation_report
+  outcome: created
+  path: reports/2026-08-30-interval-non-arithmetic-detailed-design.md
+  reviewed_head: null
+  attestation_head: null
+  pr_comment: pending_after_final_head
+
+findings: []
+blocked: []
+held:
+  - item: production elementary endpoint backend selection
+    reason: semantics and gate are defined; implementation-specific managed/native choice requires benchmark, proof, deployment, and license review
+  - item: final API naming
+    reason: concrete candidates are supplied, but each Phase 4 subphase retains an API-review gate
+  - item: exact parser resource-limit values
+    reason: limits require implementation benchmark and security review; the requirement to define and test them is fixed
+unexplored: []
+unknown:
+  - field_or_fact: final handoff persistence commit SHA
+    reason: it does not exist until this packet is committed
+  - field_or_fact: final current PR HEAD
+    reason: it is read after this packet is committed
+  - field_or_fact: exact-head workflow state
+    reason: it must be queried against the final current PR HEAD
+not_applicable:
+  - field_or_area: TDD red/green execution
+    reason: documentation-only task with no executable target
+  - field_or_area: build/test/benchmark result
+    reason: no executable project exists
+  - field_or_area: diagnostic artifact download
+    reason: no workflow run exists for this documentation-only change
+
+remaining_risks:
+  - The new design has not yet received independent review.
+  - Correctly directed elementary functions remain a substantial implementation effort.
+  - Atan2, periodic reduction, general power, decoration propagation, and exact parsing have large edge-case surfaces.
+  - A future implementation must not silently weaken tightness when a certified backend is unavailable.
+
+source_payloads:
+  - source_skill: work-context-manager
+    output_contract_version: unknown
+    content_type: text/markdown
+    payload: >-
+      Context was resolved from the current user request, PR #3 current state, accepted base and detailed designs,
+      empty tasks status, workflow absence, and fixed external references. The write boundary is documentation,
+      report/handoff, and PR publication only.
+  - source_skill: implementation-worker
+    output_contract_version: unknown
+    content_type: text/markdown
+    payload: >-
+      Four new detailed-design documents and one index update were committed in five logical units without
+      changing the previously reviewed arithmetic documents or any executable area.
+  - source_skill: report-writer
+    output_contract_version: unknown
+    content_type: text/markdown
+    payload: >-
+      Durable report created at reports/2026-08-30-interval-non-arithmetic-detailed-design.md. Final exact-head
+      evidence and concise PR summary are published after this handoff commit.
+
+next_action:
+  type: independent_design_review
+  target: PR #3 final current HEAD
+  target_skill: chat-review-worker
+  summary: Review the newly added Phase 4 roadmap and feature-specific detailed designs before any source implementation begins.
+  instructions:
+    - Treat the previous PASS as applying only to the previous immutable reviewed scope.
+    - Review the new documents and directly affected index from zero.
+    - Verify pinned inari/kv/ITF1788 assumptions and operation formulas.
+    - Record exact reviewed HEAD and only use workflow runs whose head_sha matches it.
+    - If no matching run exists, report CI未実施 and do not substitute another SHA.
+    - Do not merge.
+  required_attachments_or_references:
+    - doc/Design/detail/IntervalNonArithmetic.Roadmap.md
+    - doc/Design/detail/IntervalSetAndNumeric.md
+    - doc/Design/detail/IntervalMathFunctions.md
+    - doc/Design/detail/IntervalAdvancedFeatures.md
+    - doc/Design/detail/README.md
+    - reports/2026-08-30-interval-non-arithmetic-detailed-design.md
+
+transport:
+  method: repository_file
+  packet_path: reports/2026-08-30-interval-non-arithmetic-detailed-design-handoff.yaml
+  final_publication_note: >-
+    The final PR HEAD, exact matching workflow count, CI execution state, and concise summary are recorded
+    after this file is committed because a handoff file cannot contain its own future commit SHA.
