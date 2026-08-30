@@ -2,390 +2,255 @@ schema_version: 3
 producer:
   skill: chat-implementation-worker
   mode: review_followup
-  generated_at: 2026-08-31T08:35:00+09:00
+  generated_at: 2026-08-31T08:40:00+09:00
 
 repository: ssaattww/Devo6.Interval
 issue_or_pr: "PR #5"
 task_id: null
 branch: docs/task-and-phase-plan
 base_ref: main
+
 target:
-  current_head: commit_pending
   reviewed_head: b20fa7d7c31326770fac925a4e0c1b35cf72de6b
-  commit_range: c46ba0ca7af476d1ed2857532f5efbe86f5cc0e2..5c4c3c12490d16296867cdaf74015a6c7c8ab7ca
+  followup_start_head: c46ba0ca7af476d1ed2857532f5efbe86f5cc0e2
+  technical_head: 5d87d2be94e6e2c48b292f90119e10cf621153b0
+  final_pr_head: pending_after_handoff
 
 verification:
   capability: remote_ci_only
   capability_evidence:
-    - Repository access/update is performed through the GitHub connector; no local repository checkout is used.
-    - The target repository currently has no executable production/test project and no executable workflow.
-  technical_head: 5c4c3c12490d16296867cdaf74015a6c7c8ab7ca
-  administrative_parent: 3915f0a8c06264f34f8403ba8728e0734f482c48
+    - Repository access and writes were performed through the GitHub connector.
+    - The repository still has no executable production/test project and no executable GitHub Actions workflow.
+  technical_head: 5d87d2be94e6e2c48b292f90119e10cf621153b0
+  report_commit: 1762f3eb05ce6a2df0fb89d09f4e5dbfadf9ee8c
   commit:
     state: committed
-    review_target_sha: 5c4c3c12490d16296867cdaf74015a6c7c8ab7ca
+    review_target_sha: 5d87d2be94e6e2c48b292f90119e10cf621153b0
   push:
     state: pushed
-    head_sha: commit_pending
+    head_sha: pending_after_handoff
   ci_wait:
-    state: ci_wait_pending
+    state: pending_final_exact_head_check
     required_for: route_verification
   final_publication:
-    sequence: final_push_then_authorized_pr_create_or_update_then_exact_head_pull_request_ci_wait
+    sequence: persist_handoff_then_fetch_pr_current_head_then_exact_head_ci_check_then_update_pr_and_comment
     pr_action: update
 
 authoritative_requirements:
   - source: user_instruction
     reference: current user request
-    summary: Address PR #5 review findings and make task acceptance criteria concrete.
+    summary: Address PR #5 review findings and make every task acceptance criterion concrete.
   - source: repository_instruction
     reference: project instructions
-    summary: Use GitHub connector; exact-head CI only; no merge; detailed report plus concise PR comment.
+    summary: Use GitHub connector, exact-head CI only, detailed report plus concise PR comment, and do not merge.
   - source: design
     reference: doc/Design/detail/IntervalArithmetic.md version 5
-    summary: Phase order, TDD, diagnostic artifacts, canonical interval semantics, Phase 4 preflight requirements.
-  - source: pr
+    summary: Phase order, TDD, diagnostic artifacts, interval semantics, Phase 4 start gates, AOT/performance requirements.
+  - source: pr_review
     reference: reports/2026-08-31-pr5-initial-review.md
-    summary: F-PR5-001 through F-PR5-010 require follow-up.
+    summary: F-PR5-001 through F-PR5-010 require follow-up and normal-review fix verification.
 
 development_policy:
-  method: documentation review follow-up; source implementation remains TDD when it starts
-  testing_order: documentation validation only for this change; future source tasks use Red then Green
+  method: documentation review follow-up
+  testing_order: documentation validation for this PR; future source tasks remain Red then Green
   governing_source: project instructions and detailed design
-validation_plan:
-  commands:
-    - GitHub compare c46ba0ca7af476d1ed2857532f5efbe86f5cc0e2..5c4c3c12490d16296867cdaf74015a6c7c8ab7ca
-    - Re-fetch tasks/tasks-status.md from docs/task-and-phase-plan
-    - Fetch workflow runs for the final PR current HEAD
-  required_failure_diagnostics:
-    - test result
-    - stdout
-    - stderr
-    - diagnostic log
-    - caseId/input bits/selected branch/exact/reference/actual data when source CI exists
-blocked: []
 
-authorized_actions:
-  - read_repository
-  - edit_documentation
-  - write_handoff
-  - write_report
-  - commit
-  - push
-  - update_pr
-  - comment_pr
+scope:
+  - Make task acceptance criteria directly judgeable from task text wherever the design has a fixed answer.
+  - Add Phase 4A through 4E implementation preflight review gates.
+  - Address F-PR5-001 through F-PR5-010.
+  - Preserve numerical design semantics.
+non_goals:
+  - Implement production source or tests.
+  - Change doc/Design numerical semantics.
+  - Add an empty CI workflow before P1-001 creates executable projects.
+  - Merge PR #5.
+
 write_boundary:
   allowed:
     - path_or_operation: tasks/phases-status.md
-      reason: Phase gates affected by F-PR5 findings.
+      reason: Phase start/completion gates require review-finding fixes.
     - path_or_operation: tasks/tasks-status.md
-      reason: Primary task acceptance-criteria artifact.
+      reason: Primary acceptance-criteria artifact.
     - path_or_operation: reports/2026-08-31-pr5-review-followup.md
-      reason: Required detailed implementation/follow-up report.
+      reason: Required detailed report.
     - path_or_operation: reports/2026-08-31-pr5-review-followup-handoff.yaml
       reason: Required transportable handoff.
     - path_or_operation: PR #5 body/comment
-      reason: Required concise publication/update.
+      reason: Required concise publication.
   forbidden:
     - path_or_operation: doc/Design/**
-      reason: Numerical design is not changed by this follow-up.
+      reason: Numerical semantics are unchanged.
     - path_or_operation: src/**
-      reason: Source implementation has not started.
+      reason: Implementation has not started.
     - path_or_operation: tests/**
-      reason: Source implementation has not started.
+      reason: Implementation has not started.
     - path_or_operation: .github/workflows/**
-      reason: Detailed design defers workflow creation to P1-001 with executable projects.
-
-scope:
-  - Make every task acceptance criterion objectively checkable where the design has a fixed answer.
-  - Add Phase 4A-4E preflight review gates.
-  - Address F-PR5-001 through F-PR5-010.
-non_goals:
-  - Change numerical semantics.
-  - Implement production source/tests.
-  - Add empty CI workflow before P1-001.
-  - Merge PR #5.
+      reason: Design section 16.1 assigns diagnostic workflow creation to P1-001 with executable projects.
 
 files:
   changed:
     - path: tasks/phases-status.md
-      purpose: Objective phase start/completion gates and Phase 4 preflight requirements.
+      purpose: Objective phase gates and Phase 4 preflight requirements.
     - path: tasks/tasks-status.md
-      purpose: Concrete task acceptance criteria and finding mapping.
+      purpose: 67 concrete tasks/gates and finding mapping.
     - path: reports/2026-08-31-pr5-review-followup.md
-      purpose: Detailed follow-up report.
+      purpose: Detailed follow-up evidence.
     - path: reports/2026-08-31-pr5-review-followup-handoff.yaml
       purpose: Continuation packet.
   inspected:
     - path: reports/2026-08-31-pr5-initial-review.md
-      purpose: Source findings F-PR5-001 through F-PR5-010.
+      purpose: Source review findings.
     - path: doc/Design/detail/IntervalArithmetic.md
-      purpose: Authoritative phase/acceptance semantics from prior context and repository evidence.
+      purpose: Authoritative design requirements.
   intentionally_untouched:
     - path_or_area: doc/Design/**
-      reason: No design-semantic change requested.
+      reason: No design-semantic change.
     - path_or_area: src/** and tests/**
-      reason: Implementation has not started.
+      reason: No implementation work in this PR.
     - path_or_area: .github/workflows/**
-      reason: P1-001 owns the first executable diagnostic workflow.
+      reason: No executable target exists yet.
 
 commands:
-  - command: compare c46ba0ca7af476d1ed2857532f5efbe86f5cc0e2..5c4c3c12490d16296867cdaf74015a6c7c8ab7ca
-    purpose: Confirm technical fix changes only task/phase documents.
+  - command: compare c46ba0ca7af476d1ed2857532f5efbe86f5cc0e2..5d87d2be94e6e2c48b292f90119e10cf621153b0
+    purpose: Validate final technical-content follow-up range.
     exit_code: 0
     result: passed
-    head_sha: 5c4c3c12490d16296867cdaf74015a6c7c8ab7ca
-    evidence: ahead_by=2, only tasks/phases-status.md and tasks/tasks-status.md modified.
+    head_sha: 5d87d2be94e6e2c48b292f90119e10cf621153b0
+    evidence: status=ahead, ahead_by=5, behind_by=0; only task/phase and follow-up report/handoff files changed.
   - command: fetch tasks/tasks-status.md from docs/task-and-phase-plan
-    purpose: Confirm persisted acceptance criteria and finding mapping.
+    purpose: Verify persisted detailed criteria.
     exit_code: 0
     result: passed
-    head_sha: 5c4c3c12490d16296867cdaf74015a6c7c8ab7ca
-    evidence: Preflight tasks, directed rounding branch rules, AOT gate, parser/binary criteria, and finding table were re-fetched.
+    head_sha: 5d87d2be94e6e2c48b292f90119e10cf621153b0
+    evidence: Preflight dependencies, branch correction predicates, AOT gate, benchmark threshold, parser/binary contracts, and finding mapping are present.
 
 tests:
   - name: source build/test
     phase: not_applicable
     result: not_run
-    head_sha: 5c4c3c12490d16296867cdaf74015a6c7c8ab7ca
-    evidence: Documentation-only PR; no executable project/test target exists yet.
+    head_sha: 5d87d2be94e6e2c48b292f90119e10cf621153b0
+    evidence: Documentation-only PR; no executable production/test project exists.
 
 ci:
   required: true
   workflow: null
   run_id: null
-  head_sha: commit_pending
-  conclusion: unknown
+  head_sha: pending_after_handoff
+  conclusion: pending_final_exact_head_check
   artifacts: []
 
 implementation:
   outcome: completed
-  final_head: 5c4c3c12490d16296867cdaf74015a6c7c8ab7ca
+  technical_head: 5d87d2be94e6e2c48b292f90119e10cf621153b0
   commits:
     - sha: cbe2f3c66bcb201bd1e05b6362b90302d5682bd6
       purpose: Make phase gates objectively testable.
     - sha: 5c4c3c12490d16296867cdaf74015a6c7c8ab7ca
-      purpose: Make every task acceptance criterion concrete and map PR findings.
+      purpose: Make task acceptance criteria concrete and map review findings.
+    - sha: 5d87d2be94e6e2c48b292f90119e10cf621153b0
+      purpose: Replace remaining ambiguous acceptance wording with formulas and fixed cases.
+    - sha: 1762f3eb05ce6a2df0fb89d09f4e5dbfadf9ee8c
+      purpose: Finalize detailed follow-up report for technical head 5d87d2be.
   addressed_findings:
     - id: F-PR5-001
-      reviewed_head: b20fa7d7c31326770fac925a4e0c1b35cf72de6b
+      severity: high
       disposition: addressed
-      evidence: P4A-000/P4B-000/P4C-000/P4D-000/P4E-000 added with reviewed SHA/verdict/report/workflow/smoke gates.
+      evidence: P4A-000/P4B-000/P4C-000/P4D-000/P4E-000 require reviewed SHA, pass verdict, report path, diagnostic workflow, smoke fixture, and block Red start.
     - id: F-PR5-002
-      reviewed_head: b20fa7d7c31326770fac925a4e0c1b35cf72de6b
+      severity: medium
       disposition: addressed
-      evidence: P1-001 lists all required diagnostic comparison fields.
+      evidence: P1-001 enumerates caseId/inputBits/branch/exact/Devo6/inari/kv/MPFR/expected-difference fields.
     - id: F-PR5-003
-      reviewed_head: b20fa7d7c31326770fac925a4e0c1b35cf72de6b
+      severity: medium
       disposition: addressed
-      evidence: P1-002 fixes negated-lower, qNaN 2-lane, raw state, ToString criteria.
+      evidence: P1-002 fixes negated-lower, qNaN 2-lane, one-sided NaN rejection, raw state, and ToString criteria.
     - id: F-PR5-004
-      reviewed_head: b20fa7d7c31326770fac925a4e0c1b35cf72de6b
+      severity: medium
       disposition: addressed
-      evidence: P1-006/P1-008 specify NextUp/NextDown/no-correction predicates.
+      evidence: P1-006 and P1-008 specify BitIncrement/BitDecrement/no-correction predicates and fixed witnesses.
     - id: F-PR5-005
-      reviewed_head: b20fa7d7c31326770fac925a4e0c1b35cf72de6b
+      severity: medium
       disposition: addressed
-      evidence: API 3-scenario fixtures and fixed benchmark policy/threshold are present.
+      evidence: P1-012/P2-001 fix three public API scenarios; P3-006 fixes benchmark workload, metric, and thresholds before candidate result measurement.
     - id: F-PR5-006
-      reviewed_head: b20fa7d7c31326770fac925a4e0c1b35cf72de6b
+      severity: medium
       disposition: addressed
-      evidence: P4E parser acceptance includes unbounded/hex/culture/recursion/resource rules.
+      evidence: P4E-000/P4E-009 define parser grammar, unbounded/hex/culture/resource fixtures, and no-recursion rule.
     - id: F-PR5-007
-      reviewed_head: b20fa7d7c31326770fac925a4e0c1b35cf72de6b
+      severity: medium
       disposition: addressed
-      evidence: P4E-010 fixes 18-byte LE wire layout and length-first rejection.
+      evidence: P4E-010 fixes the 18-byte LE wire layout and length-first rejection.
     - id: F-PR5-008
-      reviewed_head: b20fa7d7c31326770fac925a4e0c1b35cf72de6b
+      severity: medium
       disposition: addressed
-      evidence: P1-013 adds JIT/AOT/trimming/hot-path gates.
+      evidence: P1-013 fixes allocation/disassembly/NativeAOT/trimming/raw-result gates.
     - id: F-PR5-009
-      reviewed_head: b20fa7d7c31326770fac925a4e0c1b35cf72de6b
+      severity: low
       disposition: addressed
-      evidence: P4E-006 fixes Decoration byte values 0/4/8/12/16.
+      evidence: P4E-006 fixes Decoration underlying byte and values 0/4/8/12/16.
     - id: F-PR5-010
-      reviewed_head: b20fa7d7c31326770fac925a4e0c1b35cf72de6b
+      severity: medium
       disposition: addressed
-      evidence: P4B-007 adds conditional native backend qualification gate.
+      evidence: P4B-007 requires managed N/A reason or native interop-performance/ABI/thread/AOT/trimming/distribution/license qualification.
   failure_diagnostics: []
   blocked_items: []
   summary:
-    - Technical task/phase documentation fixes are complete.
-    - Normal reviewer fix verification is still required.
+    - All ten initial PR #5 findings have implementation-worker dispositions of addressed.
+    - Normal reviewer fix verification is still required before the initial FAIL is closed.
 
 review:
   mode: fix_verification
-  reviewed_head: b20fa7d7c31326770fac925a4e0c1b35cf72de6b
-  reviewer:
-    identity: previous normal-review chat
-    role: normal_reviewer
-    continuity:
-      previous_reviewer_identity: previous normal-review chat
-      changed: false
-      reason: null
-    independence:
-      implemented_change: false
-      implemented_review_fix: false
-      served_as_normal_reviewer: true
-      inherited_conversation: false
-      evidence:
-        - Initial review report identifies the normal reviewer and reviewed HEAD.
-  verdict: fail
-  required_coverage: []
-  independent_closure:
-    initial_independent_reviewed_head: null
-    closure_reviewed_heads: []
-    reviewer_continuity: null
-    closure_scope: []
-    completeness_matrix: []
-  validation_assessment: []
-  reserved_report_paths: []
-  report_attestation:
-    allowed: false
-    reviewed_implementation_head: null
-    allowed_paths: []
-    required_first_parent: null
-    maximum_commits_after_reviewed_head: null
-    forbidden_path_classes: []
-    no_later_commits_required: not_applicable
-    validation_status: not_applicable
-    validation_evidence: []
+  initial_reviewed_head: b20fa7d7c31326770fac925a4e0c1b35cf72de6b
+  fix_target_technical_head: 5d87d2be94e6e2c48b292f90119e10cf621153b0
+  prior_verdict: fail
+  current_worker_verdict: not_applicable
+  required_verification_matrix:
+    - required_action
+    - document_path
+    - actual_fixture_or_evidence
+    - focused_evidence
+  reviewer_continuity: same_normal_reviewer_requested
   summary:
-    - Initial review verdict remains historical FAIL until the normal reviewer verifies this new HEAD.
+    - Initial FAIL remains historical until normal-review fix verification completes.
 
 report:
   report_type: implementation_report
-  outcome: created
+  outcome: updated
   persistence_mode: repository_file
   paths:
     - reports/2026-08-31-pr5-review-followup.md
     - reports/2026-08-31-pr5-review-followup-handoff.yaml
-  reviewed_head: b20fa7d7c31326770fac925a4e0c1b35cf72de6b
-  attestation_head: null
-  pr_comments: []
+  detailed_report_commit: 1762f3eb05ce6a2df0fb89d09f4e5dbfadf9ee8c
   summary:
-    - Detailed follow-up report persisted.
-
-findings:
-  - id: F-PR5-001
-    severity: high
-    origin: introduced_by_change
-    location: tasks/tasks-status.md Phase 4 dependencies
-    description: Phase 4 pre-implementation review gate was missing.
-    impact: Phase 4 source could start before design review completion.
-    evidence: Initial review report.
-    required_action: Add per-subphase preflight review gate.
-  - id: F-PR5-002
-    severity: medium
-    origin: introduced_by_change
-    location: P1-001
-    description: Diagnostic artifact fields were incomplete.
-    impact: Numeric mismatch root cause could not be reconstructed from artifact alone.
-    evidence: Initial review report.
-    required_action: Enumerate exact/reference/actual diagnostic fields.
-  - id: F-PR5-003
-    severity: medium
-    origin: coverage_miss
-    location: P1-002
-    description: Internal canonical state and ToString acceptance were missing.
-    impact: Phase 3 representation assumptions could drift.
-    evidence: Initial review report.
-    required_action: Add negated-lower/qNaN/raw-state/ToString criteria.
-  - id: F-PR5-004
-    severity: medium
-    origin: introduced_by_change
-    location: P1-006/P1-008
-    description: Branch fixtures lacked expected correction action.
-    impact: Reversed residual conditions could still satisfy the task text.
-    evidence: Initial review report.
-    required_action: Specify NextUp/NextDown/no-correction predicates.
-  - id: F-PR5-005
-    severity: medium
-    origin: introduced_by_change
-    location: P1-012/P2-001/P3-006
-    description: API and benchmark pass criteria were subjective.
-    impact: Different workers could reach different completion decisions.
-    evidence: Initial review report.
-    required_action: Fix scenarios, workload, metric and threshold.
-  - id: F-PR5-006
-    severity: medium
-    origin: coverage_miss
-    location: P4E-009
-    description: Parser input/security surface was incomplete.
-    impact: Parser could diverge on unbounded/hex/culture/resource behavior.
-    evidence: Initial review report.
-    required_action: Add concrete accepted/rejected/security fixtures.
-  - id: F-PR5-007
-    severity: medium
-    origin: coverage_miss
-    location: P4E-010
-    description: Wire layout/reject order was underspecified.
-    impact: Incompatible serialization could pass task completion.
-    evidence: Initial review report.
-    required_action: Fix 18-byte LE layout and length-first validation.
-  - id: F-PR5-008
-    severity: medium
-    origin: coverage_miss
-    location: Phase 1 gate
-    description: AOT/trimming/hot-path constraints were missing.
-    impact: API freeze could occur before deployment constraints were verified.
-    evidence: Initial review report.
-    required_action: Add explicit final gate.
-  - id: F-PR5-009
-    severity: low
-    origin: coverage_miss
-    location: P4E-006
-    description: Decoration numeric values were not fixed.
-    impact: Public enum ABI/interchange could differ from design.
-    evidence: Initial review report.
-    required_action: Fix underlying type and values.
-  - id: F-PR5-010
-    severity: medium
-    origin: coverage_miss
-    location: P4B-007
-    description: Native backend qualification was incomplete.
-    impact: Correct but undistributable/unsafe/slow native backend could be adopted.
-    evidence: Initial review report.
-    required_action: Add conditional native qualification matrix.
+    - Detailed report now references final technical-content HEAD 5d87d2be94e6e2c48b292f90119e10cf621153b0.
 
 held:
-  - item: Exact-head CI
-    reason: No executable workflow exists yet; technical fix HEAD had zero matching runs.
+  - item: final exact-head CI
+    reason: This handoff commit changes PR HEAD; final exact-head run lookup must occur after persistence.
     owner: repository process
-    remaining_risk: Fix verification has no CI evidence.
-    verdict_impact: CI remains held/未実施, not success.
+    verdict_impact: If no run matches final PR current HEAD, report CI未実施.
 unexplored: []
 unknown:
-  - field_or_fact: Final handoff commit SHA
-    reason: This packet cannot contain its own future persistence commit SHA.
+  - field_or_fact: This handoff commit SHA and final PR current HEAD
+    reason: A file cannot contain its own future persistence commit SHA.
 not_applicable:
   - field_or_area: source build/test
-    reason: Repository is documentation-only at this phase and has no executable target.
+    reason: No executable target exists in this documentation phase.
 remaining_risks:
-  - Normal reviewer has not yet verified the new task/phase HEAD.
-  - Final PR current HEAD after this handoff still requires exact-head workflow-run check.
-
-source_payloads:
-  - source_skill: implementation-worker
-    output_contract_version: unknown
-    content_type: text/markdown
-    payload: "Documentation review follow-up completed at technical HEAD 5c4c3c12490d16296867cdaf74015a6c7c8ab7ca; F-PR5-001 through F-PR5-010 addressed; no source/test/workflow changes; normal fix verification remains required."
-  - source_skill: report-writer
-    output_contract_version: unknown
-    content_type: text/markdown
-    payload: "Detailed report persisted at reports/2026-08-31-pr5-review-followup.md."
-extensions: []
+  - Normal reviewer has not yet performed fix verification on the new content.
+  - Final exact-head CI state must be published in the PR after this packet is committed.
 
 next_action:
   type: review
   target_skill: chat-review-worker
   mode: fix_verification
-  summary: Verify F-PR5-001 through F-PR5-010 against the new PR current HEAD.
+  summary: Verify F-PR5-001 through F-PR5-010 against the PR current HEAD after this handoff.
   instructions:
     - Use the same normal reviewer continuity if possible.
-    - Check required action -> document path -> actual fixture/evidence -> focused evidence for all ten findings.
+    - Verify all ten findings with the four-column completeness matrix.
     - Check only workflow runs whose head_sha exactly equals the current PR HEAD.
-    - If no matching run exists, report CI未実施.
+    - If no matching run exists, report CI未実施 and do not substitute another SHA.
     - Do not merge.
   required_attachments_or_references:
     - reports/2026-08-31-pr5-initial-review.md
@@ -401,4 +266,4 @@ transport:
   method: repository_file
   packet_path: reports/2026-08-31-pr5-review-followup-handoff.yaml
   packet_url: null
-  transport_note: Final PR current HEAD and exact-head CI state are published in the PR comment after this packet commit.
+  transport_note: Final PR current HEAD and exact-head CI result are intentionally published in the PR after this packet commit.
