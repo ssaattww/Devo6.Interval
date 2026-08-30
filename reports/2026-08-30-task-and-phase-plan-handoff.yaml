@@ -1,0 +1,193 @@
+schema_version: 3
+producer:
+  skill: chat-implementation-worker
+  mode: documentation_planning
+  generated_at: 2026-08-30
+
+repository: ssaattww/Devo6.Interval
+issue_or_pr: pending_pr_creation
+branch: docs/task-and-phase-plan
+base_ref: main
+base_sha: f71466de50e6eca4942b614b253ecbc96464fa17
+
+target:
+  planning_technical_head: 0ba19efe76bf4ceec264d49270065bf2af651baa
+  report_commit: 435e4fb12e56cd5b800ee01289a3cd0a3c59c096
+  handoff_commit: commit_pending
+  final_pr_head: pending_after_handoff
+
+request:
+  summary: Create a task list and phase list with concrete acceptance criteria.
+  interpretation: >-
+    Convert detailed design version 5 into traceable development phases and small reviewable tasks,
+    with acceptance based on observable tests, exact/reference evidence, architecture/backend consistency,
+    diagnostic artifacts, API baselines, and exact-head CI.
+
+scope:
+  - Populate tasks/phases-status.md.
+  - Populate tasks/tasks-status.md.
+  - Preserve the detailed-design phase order and implementation/TDD order.
+  - Define concrete acceptance criteria for each phase and each implementation task.
+  - Check whether a diagnostic-artifact workflow currently exists.
+  - Persist a detailed work report and this handoff packet.
+  - Create a pull request and post a concise completion summary after the final HEAD is known.
+
+non_goals:
+  - Implement production Interval code.
+  - Implement tests.
+  - Change numerical semantics in the detailed design.
+  - Add an executable CI workflow before an executable project/test target exists.
+  - Perform detailed-design fix verification itself.
+  - Merge the pull request.
+
+write_boundary:
+  allowed:
+    - tasks/phases-status.md
+    - tasks/tasks-status.md
+    - reports/2026-08-30-task-and-phase-plan.md
+    - reports/2026-08-30-task-and-phase-plan-handoff.yaml
+    - pull request body and top-level comment
+  untouched:
+    - doc/Design/**
+    - src/**
+    - tests/**
+    - samples/**
+    - .github/workflows/**
+
+result:
+  phase_count: 9
+  phases:
+    - Phase 0
+    - Phase 1
+    - Phase 2
+    - Phase 3
+    - Phase 4A
+    - Phase 4B
+    - Phase 4C
+    - Phase 4D
+    - Phase 4E
+  task_count: 61
+  phase_file: tasks/phases-status.md
+  task_file: tasks/tasks-status.md
+  report_file: reports/2026-08-30-task-and-phase-plan.md
+
+status:
+  phase_0: in_progress
+  P0-001_design_v5_fix_verification: in_progress
+  P0-002_task_phase_tracking: in_progress_until_repository_acceptance
+  phase_1_and_later: not_started
+  reason: >-
+    Detailed design version 5 remains marked fix verification required, and findings F-PR3-010 through
+    F-PR3-017 are addressed but verification pending. Planning work must not imply that Phase 1 source
+    implementation is unblocked before P0-001 closes.
+
+commits:
+  - sha: c5393812294d490445569a03047a0ec45feb9757
+    purpose: define development phases and phase acceptance gates
+  - sha: 2921e1fd8e582c65b441e70ce0558a2427e93f2d
+    purpose: define 61 implementation tasks and concrete acceptance criteria
+  - sha: 0ba19efe76bf4ceec264d49270065bf2af651baa
+    purpose: correct ReciprocalToUnion convex-hull acceptance relation
+  - sha: 435e4fb12e56cd5b800ee01289a3cd0a3c59c096
+    purpose: persist detailed task/phase planning report
+  - sha: commit_pending
+    purpose: persist this handoff packet
+
+acceptance_model:
+  common_source_task_gates:
+    - failing test is added first and confirmed to fail for the intended specification
+    - Red and Green are kept in small reviewable commits
+    - deterministic boundary fixtures cover applicable Empty/signed-zero/Infinity/subnormal/overflow cases
+    - exact oracle, MPFR, or pinned reference evidence has no unapproved differences
+    - Linux x64 and ARM64 canonical results match
+    - multiple production backends, when present, produce bitwise-identical canonical endpoints
+    - diagnostic artifacts make the failing case and branch decisions traceable
+    - public API baseline is updated when the public surface changes
+    - breaking changes are recorded in doc/Design/BreakingChanges.md when required
+    - only workflow runs whose head_sha equals the pull request current HEAD can be used as CI evidence
+  documentation_exemption:
+    tdd_required: false
+    reason: Documentation/infra-only tasks do not have production behavior to drive with Red/Green tests.
+
+phase_1_start_order:
+  - solution/project/x64+ARM64 CI/diagnostic artifact
+  - Interval construction/state/normalization
+  - exact-rational oracle and boundary corpus
+  - directed add/sub
+  - interval add/sub
+  - directed mul
+  - interval mul
+  - directed div
+  - interval div
+  - Phase 1 conformance harness
+  - pinned inari/kv corpus and reference lock
+  - sample/API evaluation report
+
+diagnostic_workflow:
+  present_at_start: false
+  repository_state: .github/workflows contained only .gitkeep
+  action_in_this_change: not_added
+  reason: >-
+    Detailed design section 16.1 explicitly defers workflow creation until the first Phase 1 pull request
+    that adds executable project/test targets. Adding an empty workflow in this documentation-only change
+    would contradict the current detailed design.
+  required_future_task: P1-001
+  minimum_future_artifacts:
+    - test result
+    - stdout
+    - stderr
+    - diagnostic log
+    - runtime/OS/architecture/CPU features
+    - reference lock
+    - conformance summary
+    - canonical result corpus
+    - failure case identifier/input sufficient for investigation
+
+validation:
+  repository_readback:
+    result: passed
+    details:
+      - tasks/phases-status.md was fetched from docs/task-and-phase-plan after commit and contained Phase 0 through 4E with completion gates.
+      - tasks/tasks-status.md was fetched from docs/task-and-phase-plan after commit and contained the full task summary and detailed acceptance criteria.
+  design_consistency:
+    result: passed_for_planning_scope
+    details:
+      - Phase ordering follows detailed design section 3.
+      - Phase 1 implementation order follows detailed design section 52.1.
+      - Phase 4 TDD order follows detailed design section 44.
+      - Review-regression findings F-PR3-010 through F-PR3-017 are represented in relevant acceptance criteria.
+      - Diagnostic workflow deferral follows detailed design section 16.1.
+  executable_validation:
+    result: not_applicable
+    reason: documentation-only; no executable production/test project currently exists
+  ci:
+    final_head: pending_after_handoff
+    matching_workflow_runs: pending_exact_head_check
+    status: pending_exact_head_check
+    substituted_other_sha: false
+
+report:
+  path: reports/2026-08-30-task-and-phase-plan.md
+  commit: 435e4fb12e56cd5b800ee01289a3cd0a3c59c096
+
+remaining_risks:
+  - Detailed design version 5 fix verification is still pending and is represented by P0-001.
+  - No executable workflow exists yet; Phase 1 cannot claim CI coverage until P1-001 adds project/tests and diagnostic artifacts.
+  - Phase 2 still contains explicit API decisions such as namespace, scalar conversion, generic math, and formal formatting policy.
+  - Phase 3 SIMD candidates must not be promoted without both bitwise correctness and benchmark improvement.
+
+next_action:
+  type: review_and_merge_planning_pr_then_close_phase0_verification
+  instructions:
+    - Review tasks/phases-status.md and tasks/tasks-status.md against detailed design version 5.
+    - Do not treat Phase 0 as complete until P0-001 fix verification closes.
+    - When Phase 1 starts, begin with P1-001 and add diagnostic-artifact CI in the same pull request as executable project/test targets.
+    - Check CI only on workflow runs whose head_sha equals the current PR HEAD; if none exists, report CI未実施.
+    - Do not merge automatically.
+
+transport:
+  method: repository_file
+  packet_path: reports/2026-08-30-task-and-phase-plan-handoff.yaml
+  final_publication_note: >-
+    The final pull request number, final current HEAD, and exact-head CI state are published in the pull
+    request comment after this packet is committed, because this file cannot contain its own future commit SHA.
