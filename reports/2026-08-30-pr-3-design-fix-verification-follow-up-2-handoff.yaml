@@ -1,0 +1,344 @@
+schema_version: 3
+producer:
+  skill: chat-implementation-worker
+  mode: review follow-up
+  generated_at: 2026-08-30T14:30:00+09:00
+
+repository: ssaattww/Devo6.Interval
+issue_or_pr: "PR #3"
+task_id: null
+branch: docs/detailed-interval-arithmetic-design
+base_ref: main
+
+target:
+  current_head: 949a480512c76e0d9048bb57355da872a586580e
+  reviewed_head: c1826cc8dab3f070bfb5133ece44969a03727e97
+  commit_range: 0c0bd720e7e32332fc1de9a136c954e50695ec1b..949a480512c76e0d9048bb57355da872a586580e
+
+verification:
+  capability: remote_ci_only
+  capability_evidence:
+    - Repository state and writes are available through the required GitHub connector.
+    - No local checkout or repository-defined executable validation target is available.
+    - The repository has no executable project, test target, or CI workflow; .github/workflows contains only .gitkeep.
+  technical_head: 430d2e852579451876e848d33f0d76dda1738f48
+  administrative_parent: 949a480512c76e0d9048bb57355da872a586580e
+  commit:
+    state: commit_pending
+    review_target_sha: 430d2e852579451876e848d33f0d76dda1738f48
+  push:
+    state: push_pending
+    head_sha: unknown
+  ci_wait:
+    state: ci_wait_pending
+    required_for: final exact-head evidence
+  full_local_equivalence_gate:
+    state: not_required
+    candidate_head: 430d2e852579451876e848d33f0d76dda1738f48
+    invalidated_runs: []
+  final_publication:
+    sequence: final_push_then_update_pr_then_exact_head_pull_request_ci_check
+    pr_action: update
+
+authoritative_requirements:
+  - source: user_instruction
+    reference: current chat
+    summary: Address the latest review findings on PR #3.
+  - source: repository_instruction
+    reference: project instructions
+    summary: Use GitHub connector for repository and PR operations, preserve reports and handoff, check only workflow runs whose head SHA matches current PR HEAD, and do not merge.
+  - source: review_report
+    reference: reports/2026-08-30-pr-3-design-fix-verification.md
+    summary: F-PR3-004 remains partial and F-PR3-009 is newly active; all other active exhaustive-review findings are resolved and F-PR3-003 remains withdrawn.
+  - source: basic_design
+    reference: doc/Design/basic/IntervalArithmetic.md
+    summary: Keep IEEE 1788.1-oriented semantics, inari as the main implementation reference, double endpoints, outward rounding, Empty/Entire, and negated-lower internal representation.
+
+development_policy:
+  method: validation-only
+  testing_order: documentation-only follow-up; no TDD execution is applicable until Phase 1 introduces source and tests
+  governing_source: current PR design-review follow-up scope
+
+validation_plan:
+  commands: []
+  required_failure_diagnostics:
+    - No executable test workflow exists for this documentation-only change.
+    - Phase 1 design continues to require test results, stdout, stderr, runner logs, oracle mismatches, conformance summaries, and architecture result corpora as failure artifacts.
+
+blocked: []
+
+scope:
+  - Resolve F-PR3-004 conformance corpus, source mapping, Empty endpoint semantics, adaptation, and gate consistency.
+  - Resolve F-PR3-009 finite-overflow conversion in the independent exact-rational oracle.
+  - Add a normative detailed-design revision and an index defining document precedence.
+  - Persist a detailed implementation-side closure report and handoff.
+  - Update the existing PR and post a concise closure comment.
+
+non_goals:
+  - Re-review or reclassify the supplied findings.
+  - Modify production source, tests, project files, or workflows.
+  - Rework findings already verified as resolved except where the new overflow oracle path directly extends F-PR3-007 fixtures.
+  - Implement the Phase 1 scalar pilot.
+  - Merge PR #3.
+
+write_boundary:
+  allowed:
+    - doc/Design/detail/IntervalArithmetic.Revision3.md
+    - doc/Design/detail/README.md
+    - reports/2026-08-30-pr-3-design-fix-verification-follow-up-2.md
+    - reports/2026-08-30-pr-3-design-fix-verification-follow-up-2-handoff.yaml
+    - PR #3 body and top-level concise comment
+  forbidden:
+    - src/**
+    - tests/**
+    - .github/workflows/**
+    - tasks/**
+    - merge
+
+files:
+  changed:
+    - path: doc/Design/detail/IntervalArithmetic.Revision3.md
+      purpose: normative correction for F-PR3-004 and F-PR3-009
+    - path: doc/Design/detail/README.md
+      purpose: define authoritative detailed-design reading order and Revision 3 precedence
+    - path: reports/2026-08-30-pr-3-design-fix-verification-follow-up-2.md
+      purpose: durable implementation-side finding closure report
+    - path: reports/2026-08-30-pr-3-design-fix-verification-follow-up-2-handoff.yaml
+      purpose: lossless continuation packet
+  inspected:
+    - path: reports/2026-08-30-pr-3-design-fix-verification.md
+      purpose: authoritative current findings and required actions
+    - path: reports/2026-08-30-pr-3-design-fix-verification-handoff.yaml
+      purpose: review state and reviewed-head continuity
+    - path: doc/Design/detail/IntervalArithmetic.md
+      purpose: design version 2 and sections being superseded
+    - path: doc/Design/basic/IntervalArithmetic.md
+      purpose: accepted semantic and representation requirements
+    - path: unageek/ITF1788@d8c2a64478ebdc9cbde6ccef33eaad3bed60ed81/itl/libieeep1788_bool.itl
+      purpose: confirm equal/isEmpty/isEntire cases and absence of isSingleton
+    - path: unageek/ITF1788@d8c2a64478ebdc9cbde6ccef33eaad3bed60ed81/itl/libieeep1788_class.itl
+      purpose: confirm finite, unbounded, and invalid bare numsToInterval cases
+    - path: unageek/ITF1788@d8c2a64478ebdc9cbde6ccef33eaad3bed60ed81/itl/libieeep1788_num.itl
+      purpose: confirm inf(Empty)=+Infinity and sup(Empty)=-Infinity
+    - path: .github/workflows
+      purpose: confirm no executable CI workflow exists
+  intentionally_untouched:
+    - path_or_area: doc/Design/detail/IntervalArithmetic.md
+      reason: preserve design version 2 as historical base and supersede only affected contracts through a normative revision
+    - path_or_area: existing review reports and prior follow-up reports
+      reason: preserve historical review and implementation evidence; issue a current correction record instead of rewriting history
+    - path_or_area: src/**, tests/**, .github/workflows/**
+      reason: documentation-only review follow-up
+
+commands: []
+
+tests:
+  - name: finding-to-design closure inspection
+    phase: documentation validation
+    result: passed
+    head_sha: 430d2e852579451876e848d33f0d76dda1738f48
+    evidence: Each required action from F-PR3-004 and F-PR3-009 maps to an explicit normative section in IntervalArithmetic.Revision3.md.
+  - name: pinned ITF1788 source-presence inspection
+    phase: documentation validation
+    result: passed
+    head_sha: 430d2e852579451876e848d33f0d76dda1738f48
+    evidence: isSingleton is absent from the pinned boolean source; bare numsToInterval cases are present in libieeep1788_class.itl; Empty inf/sup expectations are present in libieeep1788_num.itl.
+  - name: detailed-design precedence inspection
+    phase: documentation validation
+    result: passed
+    head_sha: 430d2e852579451876e848d33f0d76dda1738f48
+    evidence: doc/Design/detail/README.md requires reading Revision 3 after design version 2 and enumerates the superseded contracts.
+
+ci:
+  required: false
+  workflow: null
+  run_id: null
+  head_sha: unknown
+  conclusion: unknown
+  artifacts: []
+  note: Final exact-head run lookup must be performed after this handoff is committed. A missing matching run is CI未実施, not success, and no other SHA may be substituted.
+
+implementation:
+  outcome: completed
+  final_head: 430d2e852579451876e848d33f0d76dda1738f48
+  commits:
+    - sha: 8c90ae3cc7bc11d26d85da81b57612197938b7e9
+      purpose: add normative Revision 3 correcting conformance and exact-overflow design
+    - sha: 430d2e852579451876e848d33f0d76dda1738f48
+      purpose: add detailed-design index and precedence rules
+    - sha: 949a480512c76e0d9048bb57355da872a586580e
+      purpose: persist second follow-up detailed report
+  addressed_findings:
+    - id: F-PR3-004
+      reviewed_head: c1826cc8dab3f070bfb5133ece44969a03727e97
+      disposition: addressed
+      evidence: Revision 3 aligns Empty Lower/Upper with +Infinity/-Infinity, adds libieeep1788_class.itl constructor cases, moves isSingleton to a repository-defined matrix, and defines extraction-error and deviation-aware conformance gates.
+    - id: F-PR3-009
+      reviewed_head: c1826cc8dab3f070bfb5133ece44969a03727e97
+      disposition: addressed
+      evidence: Revision 3 compares exact finite rationals to ±double.MaxValue before using the BCL nearest result and applies that path to positive/negative add, subtract, multiply, and divide overflow fixtures.
+  failure_diagnostics: []
+  blocked_items: []
+  summary:
+    - The two active findings from the latest fix verification are addressed in a normative design revision.
+    - Historical design and review records remain unchanged; an index defines the current authoritative composition.
+    - No executable validation is claimed.
+    - No merge was performed.
+
+review:
+  mode: not_applicable
+  reviewed_head: c1826cc8dab3f070bfb5133ece44969a03727e97
+  reviewer:
+    identity: unknown
+    role: not_applicable
+    continuity:
+      previous_reviewer_identity: null
+      changed: false
+      reason: implementation worker does not issue the fix-verification verdict
+    independence:
+      implemented_change: true
+      implemented_review_fix: true
+      served_as_normal_reviewer: false
+      inherited_conversation: true
+      evidence:
+        - The current chat implemented the follow-up and did not change the supplied review verdict.
+  verdict: not_applicable
+  required_coverage: []
+  independent_closure:
+    initial_independent_reviewed_head: null
+    closure_reviewed_heads: []
+    reviewer_continuity: null
+    closure_scope: []
+    completeness_matrix: []
+  validation_assessment: []
+  reserved_report_paths: []
+  report_attestation:
+    allowed: not_applicable
+    reviewed_implementation_head: null
+    allowed_paths: []
+    required_first_parent: null
+    maximum_commits_after_reviewed_head: null
+    forbidden_path_classes: []
+    no_later_commits_required: not_applicable
+    validation_status: not_applicable
+    validation_evidence: []
+  summary: []
+
+report:
+  report_type: implementation_report
+  outcome: created
+  persistence_mode: repository_file
+  paths:
+    - reports/2026-08-30-pr-3-design-fix-verification-follow-up-2.md
+    - reports/2026-08-30-pr-3-design-fix-verification-follow-up-2-handoff.yaml
+  reviewed_head: c1826cc8dab3f070bfb5133ece44969a03727e97
+  attestation_head: null
+  pr_comments: []
+  summary:
+    - A new report corrects the prior implementation-side F-PR3-004 closure claim without rewriting historical reports.
+    - A concise PR comment remains to be posted after final publication and exact-head run lookup.
+
+findings:
+  - id: F-PR3-004
+    severity: medium
+    origin: introduced_by_change
+    location: doc/Design/detail/IntervalArithmetic.md conformance sections
+    description: Pinned source did not contain isSingleton, constructor source coverage was incomplete, and Empty inf/sup conflicted with required standard cases.
+    impact: The declared conformance corpus could not be generated or pass consistently.
+    evidence: reports/2026-08-30-pr-3-design-fix-verification.md
+    required_action: Correct source mapping, define equivalent isSingleton cases, resolve Empty inf/sup semantics, and align the conformance gate.
+  - id: F-PR3-009
+    severity: medium
+    origin: introduced_by_fix
+    location: doc/Design/detail/IntervalArithmetic.md exact oracle and overflow fixture sections
+    description: The exact-rational oracle attempted to convert an infinite BCL nearest result to a finite rational for finite overflow cases.
+    impact: Positive and negative finite overflow expected values were not reproducibly defined by the primary oracle.
+    evidence: reports/2026-08-30-pr-3-design-fix-verification.md
+    required_action: Compare the exact finite rational to ±double.MaxValue before nearest-result conversion and route all four arithmetic overflow fixtures through that independent path.
+
+held: []
+unexplored: []
+unknown:
+  - field_or_fact: final handoff persistence commit SHA
+    reason: the SHA does not exist until this packet is committed
+  - field_or_fact: final exact-head pull-request workflow result
+    reason: it must be queried after the final handoff commit
+  - field_or_fact: fix-verification verdict for the new technical HEAD
+    reason: it belongs to the reviewer, not the implementation worker
+not_applicable:
+  - field_or_area: build and test execution
+    reason: no executable project or test target exists and the change is documentation-only
+  - field_or_area: TDD red/green evidence
+    reason: no production implementation is part of this review follow-up
+remaining_risks:
+  - Design version 2 and Revision 3 must be read together until a separately reviewed consolidation is performed.
+  - Phase 1 must implement and exercise the specified oracle and conformance paths before API freeze.
+  - Reviewer fix verification is still required against the new immutable PR HEAD.
+
+source_payloads:
+  - source_skill: work-context-manager
+    output_contract_version: unknown
+    content_type: text/markdown
+    payload: >-
+      Repository ssaattww/Devo6.Interval, PR #3, branch docs/detailed-interval-arithmetic-design,
+      current start head 0c0bd720e7e32332fc1de9a136c954e50695ec1b, reviewed head
+      c1826cc8dab3f070bfb5133ece44969a03727e97, remote-CI-only route, documentation-only
+      scope, two active findings, no executable workflow, no blocked context, and no merge authority.
+  - source_skill: implementation-worker
+    output_contract_version: unknown
+    content_type: text/markdown
+    payload: >-
+      In review-follow-up mode, F-PR3-004 and F-PR3-009 were addressed through
+      IntervalArithmetic.Revision3.md and the detailed-design README. The revision changes
+      Empty public endpoints, conformance source mapping and gate rules, and independent
+      exact-rational finite-overflow conversion. Existing source, tests, workflows, and
+      historical reports were intentionally untouched. Technical head is
+      430d2e852579451876e848d33f0d76dda1738f48.
+  - source_skill: report-writer
+    output_contract_version: unknown
+    content_type: text/markdown
+    payload: >-
+      Detailed implementation-side closure report persisted at
+      reports/2026-08-30-pr-3-design-fix-verification-follow-up-2.md. It preserves both
+      finding identities and Medium severity, distinguishes addressed from reviewer-verified,
+      and requests fix verification of the new immutable head.
+
+extensions:
+  - namespace: devo6.interval.design_revision
+    payload:
+      base_design: doc/Design/detail/IntervalArithmetic.md
+      normative_revision: doc/Design/detail/IntervalArithmetic.Revision3.md
+      precedence_index: doc/Design/detail/README.md
+      superseded_contracts:
+        - Empty public Lower and Upper
+        - exact-rational finite overflow conversion
+        - Phase 1 conformance source mapping and gate
+        - overflow oracle fixtures
+        - finding closure table
+
+next_action:
+  type: review
+  target_skill: review-worker
+  mode: fix_verification
+  summary: Verify F-PR3-004 and F-PR3-009 against the new immutable PR HEAD and check directly affected regression only.
+  instructions:
+    - Preserve source finding identities and severities.
+    - Confirm the normative relationship between design version 2 and Revision 3.
+    - Check only CI whose head SHA exactly equals the PR current HEAD; report CI未実施 when no matching run exists.
+    - Do not merge.
+  required_attachments_or_references:
+    - reports/2026-08-30-pr-3-design-fix-verification.md
+    - doc/Design/detail/IntervalArithmetic.Revision3.md
+    - doc/Design/detail/README.md
+    - reports/2026-08-30-pr-3-design-fix-verification-follow-up-2.md
+  requested_authorized_actions:
+    - read_repository
+    - write_report
+    - write_handoff
+    - comment_pr
+
+transport:
+  method: repository_file
+  packet_path: reports/2026-08-30-pr-3-design-fix-verification-follow-up-2-handoff.yaml
+  packet_url: null
+  transport_note: Final packet commit SHA and exact-head CI state are recorded in the PR after publication because the packet cannot contain its own future SHA.
