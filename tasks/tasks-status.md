@@ -137,7 +137,7 @@ infra/documentation/review-gateのみのtaskはRed/Greenを要求しない。そ
 - [ ] `P4A-001`, `P4B-001`, `P4C-001`, `P4D-001`, `P4E-001`の直接依存先が各`P4?-000`である。
 - [ ] `P1-001`に§16.4のfailure diagnostic fieldがすべて列挙される。
 - [ ] `P1-013`に§47のhot-path/NativeAOT/trimming条件が列挙される。
-- [ ] PR review finding `F-PR5-001`～`F-PR5-012`が本書末尾の対応表から各修正taskへ追跡できる。
+- [ ] PR review finding `F-PR5-001`～`F-PR5-014`が本書末尾の対応表または関連report/handoffから各修正先へ追跡できる。
 
 ---
 
@@ -792,37 +792,39 @@ infra/documentation/review-gateのみのtaskはRed/Greenを要求しない。そ
 
 ## P4D-000 Phase 4D implementation preflight
 
-**設計参照:** §28, §30～§33, §46, §52.2
+**設計参照:** §28, §30～§33, §46, §52.2, F-PR5-013
 
 ### 受け入れ条件
 
 - [ ] P4C-005が`完了`である。
 - [ ] §30～§33 review reportにreviewed HEAD、verdict=pass、unresolved findings=0を記録する。
 - [ ] high-precision reducer table format/bit length/generator hashをreviewで固定し`TBD`を0件にする。
-- [ ] first-source fixtureとして `p4d-reducer-zero`: input bits=`0x0000000000000000`, expected quadrant=`0`, expected k=`0`, expected critical/pole decision=`none` を登録する。
-- [ ] metadata validation commandはproduction periodic reducerを呼ばず、`p4d-reducer-zero`のcaseId/input/expected metadataを列挙・parseして終了コード0となる。
+- [ ] first-source fixtureとして `p4d-reducer-zero`: input bits=`0x0000000000000000`, expected quadrant=`0`, expected k=`0`, expected reduced remainder bits=`0x0000000000000000` を登録する。operation-specificなSin/Cos extremum判定またはTan pole判定をこのreducer fixtureへ含めない。
+- [ ] metadata validation commandはproduction periodic reducerを呼ばず、`p4d-reducer-zero`のcaseId/input/quadrant/k/reduced-remainder metadataを列挙・parseして終了コード0となる。
 - [ ] P4D-001 Red commit前にP4D-000 status=`完了`とする。
 
 ## P4D-001 high-precision periodic reducer
 
-**設計参照:** §30
+**設計参照:** §30, F-PR5-013
 
 ### 受け入れ条件
 
 - [ ] P4D-000の`p4d-reducer-zero`をproduction reducerへ適用するRed testを実装前に実行し、未実装を理由に終了コード非0となることをreportへ記録する。
-- [ ] input=+0.0ではquadrant=0, k=0, critical/pole decision=noneとなる。
+- [ ] input=+0.0ではquadrant=0, k=0, reduced remainder=+0.0となる。reducer単体の結果として`critical/pole=none`のようなoperation非依存判定を返す契約を要求しない。
 - [ ] reducerが固定high-precision `2/pi` と `pi/2` tableを使用し、`Math.PI`通常除算だけでquadrantを決定するpathが0件である。
 - [ ] `% (2*Math.PI)`だけでperiodic critical point/poleを決定するpathが0件である。
-- [ ] exact critical lattice直前/一致/直後の固定binary64 witnessでquadrant/pole判定がreferenceと一致する。
+- [ ] exact critical lattice直前/一致/直後の固定binary64 witnessでquadrant/reduced remainder/kがreferenceと一致する。
 - [ ] MaxValue近傍を含むlarge-magnitude corpusでMPFR/reference quadrant判定 mismatch=0となる。
-- [ ] reducer diagnosticにinput bits、reduced quadrant、integer k、critical/pole decisionを保存する。
+- [ ] reducer diagnosticにinput bits、reduced quadrant、integer k、reduced remainderを保存する。Sin/Cos/Tan固有のextremum/pole decisionは各operation側diagnosticへ保存する。
 
 ## P4D-002 Sin / Cos
 
-**設計参照:** §30.1, §30.2
+**設計参照:** §30.1, §30.2, F-PR5-013
 
 ### 受け入れ条件
 
+- [ ] `Cos([+0.0,+0.0])=[1,1]`となり、operation-specific fixtureではinput bits=`0x0000000000000000`, k=`0`, `cosExtremum=maximum`を記録する。`0=2*0*pi`をCos maximum latticeとして扱う。
+- [ ] 同じ+0.0に対するSin extremum判定は`sinExtremum=none`とし、Cos判定と混同しない。
 - [ ] Sin intervalが`-pi/2+2kpi`を含むfixtureでlower=-1、`+pi/2+2kpi`を含むfixtureでupper=+1となる。
 - [ ] Cos intervalが`pi+2kpi`を含むfixtureでlower=-1、`2kpi`を含むfixtureでupper=+1となる。
 - [ ] `Sin(Entire)=[-1,1]`, `Cos(Entire)=[-1,1]`となる。
@@ -832,10 +834,11 @@ infra/documentation/review-gateのみのtaskはRed/Greenを要求しない。そ
 
 ## P4D-003 Tan
 
-**設計参照:** §30.3
+**設計参照:** §30.3, F-PR5-013
 
 ### 受け入れ条件
 
+- [ ] operation-specific fixtureでinput=+0.0, k=0, `isTanPole=false`を固定し、Tan pole lattice `pi/2+k*pi`とCos maximum lattice `2k*pi`を同一判定として扱わない。
 - [ ] poleを含まない1 branch inputは`[TanDown(a),TanUp(b)]`となる。
 - [ ] poleへdomain内から両側/片側で接近可能なinputはbare result=Entireとなる。
 - [ ] input intersectionがpole pointだけでdomain内点0件ならEmptyとなる。
@@ -1109,6 +1112,8 @@ infra/documentation/review-gateのみのtaskはRed/Greenを要求しない。そ
 | F-PR5-010 Medium | P4B-007 | elementary endpoint production adapter実call pathをfunction単位benchmark。Add/Sub/Mul/Div workloadを代用しない |
 | F-PR5-011 Medium | P4C-004 | Acos単調減少式`[AcosDown(u),AcosUp(l)]`と`Acos([0,1])` expected bits fixture |
 | F-PR5-012 Medium | P4E-000/P4E-009/P4E-012 | `R` exact text formatを必須化しNormal/Zero/Empty/Entire/unbounded/subnormal round-tripを固定 |
+| F-PR5-013 Medium | P4D-000/P4D-001/P4D-002/P4D-003 | reducer fixtureをquadrant/k/remainderへ限定し、+0.0のCos maximumとTan non-poleをoperation-specific fixtureへ分離 |
+| F-PR5-014 Medium | `reports/2026-08-31-pr5-second-review-followup-handoff.yaml` | chat-handoff-manager schema v3 required packetへ再生成しtyped fields/source_payloads/transport/finding detailsを保持 |
 
 ## 5. Phase完了時の更新規則
 
