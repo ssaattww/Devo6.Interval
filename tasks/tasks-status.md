@@ -128,7 +128,7 @@ infra/documentation/review-gateのみのtaskはRed/Greenを要求しない。そ
 - [ ] `P4A-001`, `P4B-001`, `P4C-001`, `P4D-001`, `P4E-001`の直接依存先が各`P4?-000`である。
 - [ ] `P1-001`に§16.4のfailure diagnostic fieldがすべて列挙される。
 - [ ] `P1-013`に§47のhot-path/NativeAOT/trimming条件が列挙される。
-- [ ] PR review finding `F-PR5-001`～`F-PR5-010`が本書末尾の対応表から各修正taskへ追跡できる。
+- [ ] PR review finding `F-PR5-001`～`F-PR5-012`が本書末尾の対応表から各修正taskへ追跡できる。
 
 ---
 
@@ -483,7 +483,7 @@ infra/documentation/review-gateのみのtaskはRed/Greenを要求しない。そ
 - [ ] review reportにPhase 4A対象§19～§24、`reviewed HEAD=<40桁SHA>`, `verdict=pass`, `unresolved findings=0`を記録する。
 - [ ] review report pathとreviewed HEADをP4A-000 reportへ記録する。
 - [ ] diagnostic artifact workflow fileが`.github/workflows/`配下に存在する。
-- [ ] smoke fixture `Entire.Contains(+Infinity)==false` と `Entire.Contains(0.0)==true` が既存harnessでpassする。
+- [ ] preflight fixture manifestに `Entire.Contains(+Infinity)==false` と `Entire.Contains(0.0)==true` の2 caseId・input・expectedを登録し、harnessがproduction `Contains`を呼び出さずに2件を列挙・parseできることを確認する。
 - [ ] Midpoint tie policyとPhase 4A public namingを単一値でdecision recordへ固定し`TBD`を0件にする。
 - [ ] P4A-001の最初のRed commitのparent時点でP4A-000 status=`完了`である。
 
@@ -493,6 +493,7 @@ infra/documentation/review-gateのみのtaskはRed/Greenを要求しない。そ
 
 ### 受け入れ条件
 
+- [ ] P4A-000で登録した`Entire.Contains(+Infinity)==false`または`Entire.Contains(0.0)==true`の少なくとも1件を、production実装前のRed commitで実行して終了コード非0となることを記録する。
 - [ ] `Empty.Contains(0)==false`, `Entire.Contains(0)==true`, `Entire.Contains(+Inf)==false`, `Entire.Contains(-Inf)==false`, `Entire.Contains(NaN)==false`となる。
 - [ ] `Zero.Contains(+0.0)==true`かつ`Zero.Contains(-0.0)==true`となる。
 - [ ] `[1,2].Contains(1)==true`, `.Contains(2)==true`, `.Contains(0)==false`, `.Contains(3)==false`となる。
@@ -598,7 +599,7 @@ infra/documentation/review-gateのみのtaskはRed/Greenを要求しない。そ
 - [ ] P4A-008が`完了`である。
 - [ ] review reportに§25～§27、reviewed HEAD、verdict=pass、unresolved findings=0を記録する。
 - [ ] diagnostic workflowが存在し、P4A final run artifactを1件取得できる。
-- [ ] input=`[-2,1]`, expected=`[-0.0,4]`のSquare smoke Red testをharnessへ登録し実行commandをreportへ記録する。
+- [ ] preflight fixture manifestにinput=`[-2,1]`, expected=`[-0.0,4]`のSquare caseを登録し、harnessがproduction `Square`を呼び出さずにcaseId・input・expectedを列挙・parseできることを確認する。
 - [ ] P4B-001 Red commit前にP4B-000 status=`完了`とする。
 
 ## P4B-001 tight IntervalConstants
@@ -607,6 +608,7 @@ infra/documentation/review-gateのみのtaskはRed/Greenを要求しない。そ
 
 ### 受け入れ条件
 
+- [ ] P4B-000で登録した最初のPhase 4B fixtureをproduction implementation前のRed commitで実行し、未実装を理由に終了コード非0となることを記録する。
 - [ ] `Pi, HalfPi, TwoPi, E, Ln2, Ln10, Sqrt2`の7 constantについてMPFR RNDD/RNDU生成lower/upper bitsをfixtureへ固定する。
 - [ ] generatorは各constantで`lower <= exact value <= upper`を確認する。
 - [ ] exact valueがbinary64で表現不能なconstantをnearest doubleのsingletonとして保存しない。
@@ -682,7 +684,10 @@ infra/documentation/review-gateのみのtaskはRed/Greenを要求しない。そ
 - [ ] MPFR version、precision=53、RNDD/RNDU、generator hash、corpus SHA-256をreference-lockへ保存する。
 - [ ] managed backendを正式採用する場合、全required endpoint corpusでMPFR bits mismatch=0とする。
 - [ ] native backendを使用しない場合はreportへ`native_backend_gate=N/A`と具体理由を記録する。
-- [ ] native backendを採用する場合、interop/copy/dispatch込みbenchmarkをP3-006と同じpolicyで測定し採用閾値をpassする。
+- [ ] native backend候補の性能policyはcandidate結果測定前のcommitで固定し、BenchmarkDotNet/.NET 10、同一endpoint input corpus、batch N=`32,256,4096`、metric=`median ns/endpoint`、allocation、CPU/runtime情報を記録する。
+- [ ] native backendが提供予定の各elementary endpoint functionについて、production adapter entrypoint（例: `ExpDown/ExpUp`, `LogDown/LogUp`, `SinDown/SinUp`, `CosDown/CosUp`。採用function setの全entry）を実際に呼び、interop + marshalling/copy + dispatch + native call + return conversionを含むend-to-end pathを測定する。`Add/Sub/Mul/Div` workloadで代用しない。
+- [ ] performance baselineは同一production adapter contractを満たすmanaged endpoint backendとし、各function・N>=256でnative/managed median ratioの幾何平均`<=0.95`、各function workload`<=1.02`、allocation増加`0 B`を採用閾値とする。
+- [ ] native candidateが対応するfunctionのうち1つでも上記閾値を満たさない場合、そのfunctionはnative production dispatchへ登録しない。function単位採否表に`function / managed median / native median / ratio / adopted`を保存する。
 - [ ] native採用時、Linux x64/ARM64配布assetがCIから利用でき、missing binaryによる通常API failure=0となる。
 - [ ] native採用時、ABI smoke、32 parallel concurrent-call stress、NativeAOT publish、trimming publishが全て終了コード0となる。
 - [ ] native採用時、license/NOTICE/binary redistribution条件をrepository fileへ保存する。
@@ -701,7 +706,7 @@ infra/documentation/review-gateのみのtaskはRed/Greenを要求しない。そ
 - [ ] P4B-007が`完了`である。
 - [ ] §28～§29と§33のreview reportがreviewed HEAD、verdict=pass、unresolved findings=0を持つ。
 - [ ] endpoint backendがP4B-007でqualified済みである。
-- [ ] smoke fixture `Log([-1,1])=[-Inf,+0.0]`をMPFR harnessで比較可能である。
+- [ ] preflight fixture manifestに `Log([-1,1])=[-Inf,+0.0]` のcaseId・input・expected bits/referenceを登録し、production `Log`を呼ばずにMPFR/reference harnessがfixture metadataを列挙・parseできることを確認する。
 - [ ] P4C-001 Red commit前にP4C-000 status=`完了`とする。
 
 ## P4C-001 Exp / Exp2 / Exp10
@@ -710,6 +715,7 @@ infra/documentation/review-gateのみのtaskはRed/Greenを要求しない。そ
 
 ### 受け入れ条件
 
+- [ ] P4C-000で登録した最初のPhase 4C fixtureをproduction implementation前のRed commitで実行し、未実装を理由に終了コード非0となることを記録する。
 - [ ] Empty inputはEmptyを返す。
 - [ ] lower=-Infinity endpointはlower result=+0.0、upper=+Infinity endpointはupper result=+Infinityとなる。
 - [ ] `Exp([0,0])=[1,1]`, `Exp2([0,0])=[1,1]`, `Exp10([0,0])=[1,1]`となる。
@@ -747,7 +753,10 @@ infra/documentation/review-gateのみのtaskはRed/Greenを要求しない。そ
 
 - [ ] Asinh/Atanは全実数monotonic increasingとしてMPFR bitsと一致する。
 - [ ] Acoshは`b<1 -> Empty`, `a<1<=b`ではlower=0 limit, positive valid rangeはdirected endpointsとなる。
-- [ ] Asin/Acosは`[-1,1]`へclipし、intersectionがEmptyならEmptyとなる。
+- [ ] Asinは`[-1,1]`へclipし、clip後`[l,u]`がnonemptyなら`[AsinDown(l),AsinUp(u)]`となる。
+- [ ] Acosは`[-1,1]`へclipし、clip後`[l,u]`がnonemptyなら単調減少式`[AcosDown(u),AcosUp(l)]`となる。
+- [ ] `Acos([0,1])=[AcosDown(1),AcosUp(0)]`をcaseId付きfixtureにし、両endpointのexpected binary64 bitsをMPFR RNDD/RNDUから固定する。
+- [ ] Asin/Acosはclip intersectionがEmptyならEmptyとなる。
 - [ ] Atanhは`(-1,1)`へclipし、`[-1,-1]`と`[1,1]`はEmpty、boundary接触では±Infinity limitを返す。
 - [ ] domain clipping前後のinput/branchをdiagnostic artifactへ記録する。
 
@@ -777,7 +786,7 @@ infra/documentation/review-gateのみのtaskはRed/Greenを要求しない。そ
 - [ ] P4C-005が`完了`である。
 - [ ] §30～§33 review reportにreviewed HEAD、verdict=pass、unresolved findings=0を記録する。
 - [ ] high-precision reducer table format/bit length/generator hashをreviewで固定し`TBD`を0件にする。
-- [ ] smoke fixture `Atan2(Zero,[-2,-1])=Pi` と `Sin([0,HalfPi])=[0,1]` をreference harnessへ登録する。
+- [ ] preflight fixture manifestに `Atan2(Zero,[-2,-1])=Pi` と `Sin([0,HalfPi])=[0,1]` のcaseId・input・expectedを登録し、production `Atan2`/`Sin`を呼ばずにreference harnessがfixture metadataを列挙・parseできることを確認する。
 - [ ] P4D-001 Red commit前にP4D-000 status=`完了`とする。
 
 ## P4D-001 high-precision periodic reducer
@@ -786,6 +795,7 @@ infra/documentation/review-gateのみのtaskはRed/Greenを要求しない。そ
 
 ### 受け入れ条件
 
+- [ ] P4D-000で登録した最初のPhase 4D fixtureをproduction implementation前のRed commitで実行し、未実装を理由に終了コード非0となることを記録する。
 - [ ] reducerが固定high-precision `2/pi` と `pi/2` tableを使用し、`Math.PI`通常除算だけでquadrantを決定するpathが0件である。
 - [ ] `% (2*Math.PI)`だけでperiodic critical point/poleを決定するpathが0件である。
 - [ ] exact critical lattice直前/一致/直後の固定binary64 witnessでquadrant/pole判定がreferenceと一致する。
@@ -878,9 +888,13 @@ infra/documentation/review-gateのみのtaskはRed/Greenを要求しない。そ
 - [ ] §34～§43 review reportにreviewed HEAD、verdict=pass、unresolved findings=0を記録する。
 - [ ] parser syntaxをexact grammarとしてdecision recordへ固定し、hex literalはC99-style `0x<hex>[.<hex>]p[+-]<decimal exponent>`をaccepted syntaxに含める。
 - [ ] parser resource limit `max input length / max significand digits / max exponent digits / max exception excerpt length`を正整数のnumeric literalとしてpreflight recordへ固定し`TBD`を0件にする。
-- [ ] binary interchange v1を採用する場合`length=18`, byte0=version, byte1=state, byte2..9=Lower LE, byte10..17=Upper LEをpreflight recordへ固定する。
+- [ ] exact text interchangeの必須formatを`R`とし、`R`はcanonical endpointをexact C99-style hexadecimal binary literalで出力する。Emptyは`Empty`、Entireは`Entire`、finite/unbounded nonemptyは`[lower,upper]`とし、Infinity endpointは`-Infinity`/`+Infinity`を使用する。`R`をReject/N/Aにしない。
+- [ ] binary interchange v1 contractを次で固定する: byte0 version=`0x01`; byte1 state=`0x00 Normal`, `0x01 Empty`; byte2..9 external Lower bits LE; byte10..17 external Upper bits LE。Normal stateは全nonempty interval（Zero/Entire/unboundedを含む）を表す。
+- [ ] Empty stateのendpoint payloadは16 byteすべて`0x00`とし、それ以外のpayloadはnoncanonicalとしてrejectする。Normal stateのNaN endpoint、lower>upper、lower=+Infinity、upper=-Infinityはrejectする。
+- [ ] Normal stateでlower=`+0.0`またはupper=`-0.0`が入力された場合はdecode時にそれぞれ`-0.0`/`+0.0`へcanonicalizeする。unknown state/versionはrejectする。
+- [ ] v1 canonical fixtureを最低4件固定する: Normal `[1,2]`; Normal Zero（Lower bits=`0x8000000000000000`, Upper bits=`0x0000000000000000`）; Normal Entire（Lower=`0xfff0000000000000`, Upper=`0x7ff0000000000000`）; Empty（state=`0x01`, payload=all zero）。各fixtureで18 byte全体のexpected hex列を保存する。
 - [ ] Parse rejected inputで送出するexception typeまたはerror contractを1つに固定し、TryParseはfalse/out=Emptyとするdecisionを記録する。
-- [ ] smoke fixture `DivideToUnion([1,2],Entire).Count==2`をexisting harnessへ登録する。
+- [ ] preflight fixture manifestに `DivideToUnion([1,2],Entire).Count==2` のcaseId・input・expected component metadataを登録し、production `DivideToUnion`を呼ばずにharnessがfixture metadataを列挙・parseできることを確認する。
 - [ ] P4E-001 Red commit前にP4E-000 status=`完了`とする。
 
 ## P4E-001 IntervalUnion2
@@ -889,6 +903,7 @@ infra/documentation/review-gateのみのtaskはRed/Greenを要求しない。そ
 
 ### 受け入れ条件
 
+- [ ] P4E-000で登録した最初のPhase 4E fixtureをproduction implementation前のRed commitで実行し、未実装を理由に終了コード非0となることを記録する。
 - [ ] `default(IntervalUnion2).Count==0`, `IsEmpty==true`, `First==Empty`, `Second==Empty`となる。
 - [ ] Count=1はFirst nonempty/Second Empty、Count=2はFirst/Second nonemptyかつ`First.Upper<=Second.Lower`となる。
 - [ ] `First.Upper==Second.Lower`のCount=2をmergeしない固定fixtureを持つ。
@@ -993,7 +1008,7 @@ infra/documentation/review-gateのみのtaskはRed/Greenを要求しない。そ
 
 ## P4E-009 exact/outward parser・formatter
 
-**設計参照:** §40, §43, F-PR5-006
+**設計参照:** §40, §43, F-PR5-006, F-PR5-012
 
 ### 受け入れ条件
 
@@ -1008,7 +1023,9 @@ infra/documentation/review-gateのみのtaskはRed/Greenを要求しない。そ
 - [ ] parser implementationにrecursive descent/self-recursive callを使用せず、nesting syntaxを受け入れない。
 - [ ] P4E-000で固定したmax input length/significand digits/exponent digitsについて各limit値の入力はaccepted、limit+1はP4E-000で固定したerror contractとなる。
 - [ ] exception messageに入力全文を無制限に含めず、excerpt lengthはP4E-000で固定したmax exception excerpt length以下となる。
-- [ ] exact round-trip formatを採用した場合、format->parse後のcanonical endpoint bitsが元値と一致する。
+- [ ] `R` formatは必須public/正式formatとして存在し、Normal bounded、Zero、Empty、Entire、lower-unbounded `[-Infinity,1]`、upper-unbounded `[1,+Infinity]`、min-subnormal singletonの最低7 fixtureで`Format(R) -> ParseExact/TryParseExact(R)`後のcanonical endpoint bits/stateが元値と一致する。
+- [ ] `R`でfinite endpointを出力する場合はexact C99-style hexadecimal binary literalを使用し、decimal短縮による再丸めを介さない。Zeroは`[-0x0p+0,+0x0p+0]`相当のcanonical signed-zeroを保持する。
+- [ ] `R` round-trip fixtureはx64/ARM64で同一textと同一canonical result bitsを生成する。
 
 ## P4E-010 binary interchange
 
@@ -1017,13 +1034,16 @@ infra/documentation/review-gateのみのtaskはRed/Greenを要求しない。そ
 ### 受け入れ条件
 
 - [ ] version 1 encoded lengthは常に18 byteである。
-- [ ] byte0=version、byte1=state、byte2..9=external Lower bits little-endian、byte10..17=external Upper bits little-endianとなる。
+- [ ] byte0=`0x01`、byte1=`0x00 Normal`または`0x01 Empty`、byte2..9=external Lower bits little-endian、byte10..17=external Upper bits little-endianとなる。
+- [ ] Normal stateは全nonempty interval（bounded/unbounded/Zero/Entire）を表す。
+- [ ] Empty encodeはstate=`0x01`かつbyte2..17がすべて`0x00`であり、Empty stateのpayloadに1bitでも非zeroがあるinputはrejectする。
+- [ ] Normal `[1,2]`、Zero、Entire、EmptyについてP4E-000で固定した18-byte expected hex列とencode resultがbyte-for-byte一致する。
 - [ ] encoded dataにprivate `[-Lower,Upper]` raw memory layoutを直接copyしない。
 - [ ] Zero round-tripはLower external bits=`0x8000000000000000`、Upper bits=`0x0000000000000000`となる。
-- [ ] Entire round-tripはLower=-Infinity, Upper=+Infinityのexternal bitsとなる。
-- [ ] Emptyはversion/stateでcanonical emptyを表し、internal NaN payloadをwireへ露出しない。
+- [ ] Entire round-tripはLower bits=`0xfff0000000000000`、Upper bits=`0x7ff0000000000000`となる。
 - [ ] 17 byteと19 byte inputはversion/state/endpoint decodeより前のlength checkでrejectする。
-- [ ] unknown version、unknown state、NaN endpoint、lower>upper、lower=+Inf、upper=-Infをrejectする。
+- [ ] unknown version、state>=`0x02`、Normal stateのNaN endpoint、lower>upper、lower=+Inf、upper=-Infをrejectする。
+- [ ] Normal inputのlower=`+0.0`はdecode後`-0.0`へ、upper=`-0.0`はdecode後`+0.0`へcanonicalizeし、その他のvalid endpoint bitsは保持する。
 - [ ] reject pathで片側NaN等のinvalid internal Interval stateを生成しない。
 - [ ] normal/Zero/Entire/Emptyのencode->decode round-tripでcanonical public stateが一致する。
 
@@ -1048,7 +1068,7 @@ infra/documentation/review-gateのみのtaskはRed/Greenを要求しない。そ
 ### 受け入れ条件
 
 - [ ] `F-PR3-010`, `F-PR3-013`～`F-PR3-017`のreview-regression fixtureが全件passする。
-- [ ] union/decorated equality/default/round-trip、parser exact/outward、binary 18-byte layout、split cover propertyが全件passする。
+- [ ] union/decorated equality/default/round-trip、parser exact/outward、required `R` text round-trip、binary v1 canonical 18-byte fixture、split cover propertyが全件passする。
 - [ ] parser resource limitのlimit/limit+1 testとbinary 17/19 byte reject testがpassする。
 - [ ] x64/ARM64 canonical result SHA-256が一致する。
 - [ ] qualified backend間canonical bits mismatch=0となる。
@@ -1061,16 +1081,18 @@ infra/documentation/review-gateのみのtaskはRed/Greenを要求しない。そ
 
 | Finding | 修正先 | 具体化した証拠 |
 |---|---|---|
-| F-PR5-001 High | P4A-000/P4B-000/P4C-000/P4D-000/P4E-000 | reviewed HEAD/verdict/report path/diagnostic workflow/smoke fixture/Red開始禁止 |
+| F-PR5-001 High | P4A-000/P4B-000/P4C-000/P4D-000/P4E-000 + 各先頭source task | preflightはfixture metadata列挙/parseまで。production挙動の失敗確認は先頭source task Redへ分離 |
 | F-PR5-002 Medium | P1-001 | caseId/inputBits/branch/exact/Devo6/inari/kv/MPFR/expected-difference fields |
 | F-PR5-003 Medium | P1-002 | `[-Lower,Upper]`, canonical qNaN 2 lane,片側NaN禁止, raw constructor, ToString |
 | F-PR5-004 Medium | P1-006/P1-008 | `NextUp/NextDown/無補正`条件と5 branch witnessを明記 |
 | F-PR5-005 Medium | P1-012/P2-001/P3-006 | API 3scenario、benchmark workload/metric/閾値を固定 |
 | F-PR5-006 Medium | P4E-000/P4E-009 | accepted/rejected parser fixture、hex syntax、InvariantCulture、recursion/resource limit |
-| F-PR5-007 Medium | P4E-010 | 18 byte、byte offset、little-endian、length-first reject |
+| F-PR5-007 Medium | P4E-000/P4E-010 | state code=`00/01`、Empty payload=all-zero、Normal signed-zero canonicalization、4 canonical 18-byte fixture |
 | F-PR5-008 Medium | P1-013 | allocation/disassembly/NativeAOT/trimming/raw-constructor gate |
 | F-PR5-009 Low | P4E-006 | `Decoration : byte`, 0/4/8/12/16を固定 |
-| F-PR5-010 Medium | P4B-007 | managed N/Aまたはnative interop性能/ABI/thread/AOT/trimming/distribution/license gate |
+| F-PR5-010 Medium | P4B-007 | elementary endpoint production adapter実call pathをfunction単位benchmark。Add/Sub/Mul/Div workloadを代用しない |
+| F-PR5-011 Medium | P4C-004 | Acos単調減少式`[AcosDown(u),AcosUp(l)]`と`Acos([0,1])` expected bits fixture |
+| F-PR5-012 Medium | P4E-000/P4E-009/P4E-012 | `R` exact text formatを必須化しNormal/Zero/Empty/Entire/unbounded/subnormal round-tripを固定 |
 
 ## 5. Phase完了時の更新規則
 
