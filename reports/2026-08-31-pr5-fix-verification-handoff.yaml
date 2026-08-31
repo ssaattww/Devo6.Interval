@@ -1,0 +1,303 @@
+schema_version: 3
+producer:
+  skill: chat-review-worker
+  mode: fix_verification
+  generated_at: 2026-08-31T12:45:00+09:00
+
+repository: ssaattww/Devo6.Interval
+issue_or_pr: "PR #5"
+task_id: null
+branch: docs/task-and-phase-plan
+base_ref: main
+
+target:
+  current_head: pending_after_this_handoff_commit
+  reviewed_head: 57676dd738cc6c9ed930879aa873e43cc128d72d
+  technical_content_head: 5d87d2be94e6e2c48b292f90119e10cf621153b0
+  initial_reviewed_head: b20fa7d7c31326770fac925a4e0c1b35cf72de6b
+  commit_range: c46ba0ca7af476d1ed2857532f5efbe86f5cc0e2..57676dd738cc6c9ed930879aa873e43cc128d72d
+
+verification:
+  capability: remote_ci_only
+  capability_evidence:
+    - Repository reads/writes are performed through the GitHub connector per project instruction.
+    - No executable production/test project or executable workflow exists in the repository at this phase.
+  technical_head: 57676dd738cc6c9ed930879aa873e43cc128d72d
+  administrative_parent: 57676dd738cc6c9ed930879aa873e43cc128d72d
+  commit:
+    state: committed
+    review_target_sha: 57676dd738cc6c9ed930879aa873e43cc128d72d
+  push:
+    state: pushed
+    head_sha: pending_after_this_handoff_commit
+  ci_wait:
+    state: ci_wait_pending
+    required_for: route_verification
+  final_publication:
+    sequence: final_push_then_authorized_pr_create_or_update_then_exact_head_pull_request_ci_wait
+    pr_action: update
+
+ci:
+  required: false
+  workflow: null
+  run_id: null
+  head_sha: 57676dd738cc6c9ed930879aa873e43cc128d72d
+  conclusion: not_applicable
+  artifacts: []
+
+scope:
+  - Fix-verify F-PR5-001 through F-PR5-010 on PR #5.
+  - Inspect the fix delta for regressions/new findings.
+  - Verify acceptance criteria remain directly judgeable and consistent with design version 5.
+  - Use only exact-current-HEAD workflow evidence.
+non_goals:
+  - Implement fixes.
+  - Change design semantics.
+  - Add production/tests/workflows.
+  - Merge PR #5.
+
+authoritative_requirements:
+  - source: user_instruction
+    reference: current request "再レビュー"
+    summary: Re-review PR #5 after review fixes.
+  - source: repository_instruction
+    reference: project instructions
+    summary: Use GitHub connector, exact-head CI only, persist detailed report and concise PR comment, do not merge.
+  - source: design
+    reference: doc/Design/detail/IntervalArithmetic.md version 5
+    summary: Phase/TDD/diagnostic/API/SIMD/Phase4/native/I-O contracts.
+  - source: report
+    reference: reports/2026-08-31-pr5-initial-review.md
+    summary: Initial FAIL with F-PR5-001 through F-PR5-010.
+  - source: handoff
+    reference: reports/2026-08-31-pr5-review-followup-handoff.yaml
+    summary: Implementation worker requested same-normal-reviewer fix verification.
+
+development_policy:
+  method: review only
+  testing_order: source implementation remains Red then Green; this PR is documentation-only
+  governing_source: project instructions and design §44/§52
+
+write_boundary:
+  allowed:
+    - path_or_operation: reports/2026-08-31-pr5-fix-verification.md
+      reason: Required detailed verification report.
+    - path_or_operation: reports/2026-08-31-pr5-fix-verification-handoff.yaml
+      reason: Required lossless handoff.
+    - path_or_operation: PR #5 review/comment
+      reason: Required concise publication.
+  forbidden:
+    - path_or_operation: tasks/**
+      reason: Reviewer does not implement fixes.
+    - path_or_operation: doc/Design/**
+      reason: Reviewer does not change design.
+    - path_or_operation: src/** and tests/**
+      reason: Out of review write scope.
+    - path_or_operation: .github/workflows/**
+      reason: Out of review write scope and design defers workflow to P1-001.
+
+files:
+  changed:
+    - path: reports/2026-08-30-task-and-phase-plan-handoff.yaml
+      purpose: Original implementation handoff.
+    - path: reports/2026-08-30-task-and-phase-plan.md
+      purpose: Original planning report.
+    - path: reports/2026-08-31-pr5-initial-review.md
+      purpose: Initial review history.
+    - path: reports/2026-08-31-pr5-review-followup-handoff.yaml
+      purpose: Fix-worker handoff.
+    - path: reports/2026-08-31-pr5-review-followup.md
+      purpose: Fix-worker report.
+    - path: tasks/phases-status.md
+      purpose: Phase gates and phase acceptance conditions.
+    - path: tasks/tasks-status.md
+      purpose: Detailed task acceptance conditions.
+  inspected:
+    - path: tasks/tasks-status.md
+      purpose: Verify all ten findings and newly changed criteria.
+    - path: tasks/phases-status.md
+      purpose: Verify Phase 4 preflight and phase gates.
+    - path: reports/2026-08-31-pr5-initial-review.md
+      purpose: Preserve finding identity/severity and required actions.
+    - path: reports/2026-08-31-pr5-review-followup.md
+      purpose: Compare claimed fix evidence with actual task text.
+    - path: reports/2026-08-31-pr5-review-followup-handoff.yaml
+      purpose: Verify completeness matrix/technical head.
+    - path: doc/Design/detail/IntervalArithmetic.md
+      purpose: Direct design conformance for Phase 4 start, Acos, native backend, formatting, binary interchange.
+  intentionally_untouched:
+    - path_or_area: implementation and design files
+      reason: Review-only mode.
+
+review:
+  mode: fix_verification
+  reviewed_head: 57676dd738cc6c9ed930879aa873e43cc128d72d
+  reviewer:
+    identity: same ChatGPT normal-review chat as initial PR #5 review
+    role: normal_reviewer
+    continuity:
+      previous_reviewer_identity: same ChatGPT normal-review chat
+      changed: false
+      reason: null
+    independence:
+      implemented_change: false
+      implemented_review_fix: false
+      served_as_normal_reviewer: true
+      inherited_conversation: true
+      evidence:
+        - This conversation authored the initial review but did not author the implementation-worker fix commits.
+  verdict: fail
+  required_coverage:
+    - criterion: requirement/design conformance
+      disposition: checked_finding
+      evidence: F-PR5-001, F-PR5-010, F-PR5-011, F-PR5-012
+    - criterion: correctness and edge cases
+      disposition: checked_finding
+      evidence: F-PR5-011
+    - criterion: scope discipline
+      disposition: checked_no_finding
+      evidence: Fix delta is tasks/phases/reports/handoff only.
+    - criterion: task dependency/order
+      disposition: checked_finding
+      evidence: F-PR5-001
+    - criterion: API/data/configuration compatibility
+      disposition: checked_finding
+      evidence: F-PR5-007 and F-PR5-012
+    - criterion: error/failure diagnostics
+      disposition: checked_no_finding
+      evidence: F-PR5-002 closed.
+    - criterion: security/resource handling
+      disposition: checked_no_finding
+      evidence: Parser resource/culture/recursion and binary length checks are present; interoperability gap is F-PR5-007.
+    - criterion: tests/validation adequacy
+      disposition: checked_finding
+      evidence: F-PR5-001 and F-PR5-010
+    - criterion: current-HEAD CI evidence
+      disposition: held
+      evidence: 57676dd... has zero matching workflow runs; CI未実施.
+    - criterion: report/tracking accuracy
+      disposition: checked_finding
+      evidence: Implementation-worker addressed dispositions are not reviewer closure; this verification records partial/open findings.
+    - criterion: regression/maintainability
+      disposition: checked_finding
+      evidence: F-PR5-011/F-PR5-012 regressions from pre-fix criteria.
+  validation_assessment:
+    - item: repository compare c46ba0c..57676dd
+      result: supported
+      evidence: 8 commits ahead, only tasks/phases/follow-up report/handoff changed.
+    - item: source build/test
+      result: not_applicable
+      evidence: Documentation-only phase; no executable project/test target.
+    - item: exact-head CI for reviewed head
+      result: unavailable
+      evidence: matching workflow run count is 0.
+  summary:
+    - Seven initial findings are closed.
+    - F-PR5-001 High, F-PR5-007 Medium, and F-PR5-010 Medium remain open/partial.
+    - New F-PR5-011 Medium and F-PR5-012 Medium were found.
+
+findings:
+  - id: F-PR5-001
+    severity: high
+    origin: introduced_by_fix
+    location: tasks/phases-status.md §8; tasks/tasks-status.md P4A-000 through P4E-000
+    description: Phase 4 preflight exists, but its common smoke rule requires not-yet-implemented first-subphase behavior to exit 0 before the first source Red commit; P4A is circular and P4B contradicts the common gate by requiring a Red smoke.
+    impact: Phase 4 can be blocked or TDD/preflight order can be violated.
+    evidence: P4A-000 requires Contains smoke pass before dependent P4A-001 Red; P4B-000 asks Square smoke Red while phase common gate requires smoke exit 0.
+    required_action: Separate harness/reference readiness in preflight from actual production Red tests; preflight must not require unimplemented subphase behavior to pass.
+  - id: F-PR5-007
+    severity: medium
+    origin: coverage_miss
+    location: tasks/tasks-status.md P4E-000/P4E-010
+    description: v1 length/offset/endianness are fixed but state-byte numeric mapping and special-state canonical payload/reject-vs-canonicalize rules are not.
+    impact: Incompatible encoders/decoders can both satisfy current acceptance.
+    evidence: No exact byte-1 state table or per-state payload matrix exists.
+    required_action: Require a preflight state-code/payload/decoder-action table and fixed 18-byte fixtures for each state.
+  - id: F-PR5-010
+    severity: medium
+    origin: introduced_by_fix
+    location: tasks/tasks-status.md P4B-007/P3-006
+    description: Native elementary backend performance gate reuses P3-006 policy whose operation set is Add/Sub/Mul/Div, not the elementary functions supplied by the backend.
+    impact: Native endpoint backend performance can be accepted/rejected using unrelated work.
+    evidence: P3-006 operation list is Add/Sub/Mul/Div; P4B-007 says use same policy for native backend.
+    required_action: Fix an interop-inclusive elementary-function workload for every proposed native production path while reusing only measurement mechanics/threshold concepts.
+  - id: F-PR5-011
+    severity: medium
+    origin: introduced_by_fix
+    location: tasks/tasks-status.md P4C-004
+    description: Acos domain clipping is stated but the monotonic-decreasing endpoint formula was dropped.
+    impact: Task text no longer uniquely rejects increasing-order Acos interval construction.
+    evidence: Current P4C-004 has no Acos `[AcosDown(u),AcosUp(l)]` rule; pre-fix task explicitly guarded decreasing order.
+    required_action: Restore the explicit decreasing formula and fixed/clipped examples with MPFR expected bits.
+  - id: F-PR5-012
+    severity: medium
+    origin: introduced_by_fix
+    location: tasks/tasks-status.md P4E-009/P4E-012; tasks/phases-status.md Phase 4E
+    description: Exact persistent text formatting became conditional (`if adopted`), so Phase 4E can complete without exact text interchange.
+    impact: A designed Phase 4E output can be omitted and introduced only after the phase/API gate.
+    evidence: No preflight condition requires adopting at least one exact round-trip format.
+    required_action: Require a formatting decision and at least one exact round-trip format with canonical-bit round-trip fixtures before Phase 4E completion.
+
+held:
+  - item: exact-head CI
+    reason: No workflow run exists for reviewed head 57676dd738cc6c9ed930879aa873e43cc128d72d.
+    owner: repository implementation workflow
+    remaining_risk: No automated validation evidence for this documentation-only PR.
+    verdict_impact: held; FAIL is independently caused by open findings.
+
+unexplored: []
+unknown: []
+not_applicable:
+  - field_or_area: source build/test
+    reason: No executable target exists.
+
+remaining_risks:
+  - Phase 4 task graph remains non-executable as written until F-PR5-001 is fixed.
+  - v1 wire interoperability remains ambiguous until F-PR5-007 is fixed.
+  - Native elementary performance qualification remains invalid until F-PR5-010 is fixed.
+  - Acos and exact text-format acceptance regressions must be restored.
+
+report:
+  report_type: verification_report
+  outcome: created
+  persistence_mode: repository_file
+  paths:
+    - reports/2026-08-31-pr5-fix-verification.md
+    - reports/2026-08-31-pr5-fix-verification-handoff.yaml
+  reviewed_head: 57676dd738cc6c9ed930879aa873e43cc128d72d
+  attestation_head: null
+  pr_comments: []
+  summary:
+    - Verdict FAIL; 3 carried findings open/partial and 2 new findings.
+
+next_action:
+  type: implementation
+  target_skill: chat-implementation-worker
+  mode: review_followup
+  summary: Fix five open findings then return to the same normal reviewer.
+  instructions:
+    - Fix F-PR5-001, F-PR5-007, F-PR5-010, F-PR5-011, F-PR5-012.
+    - Preserve closed findings F-PR5-002/003/004/005/006/008/009 unless affected by the fix.
+    - Provide required action -> document path -> actual fixture/evidence -> focused evidence for each open finding.
+    - Recheck exact current-HEAD CI; do not substitute another SHA.
+    - Do not merge.
+  required_attachments_or_references:
+    - reports/2026-08-31-pr5-fix-verification.md
+    - reports/2026-08-31-pr5-initial-review.md
+    - tasks/tasks-status.md
+    - tasks/phases-status.md
+  requested_authorized_actions:
+    - read_repository
+    - edit_documentation
+    - write_handoff
+    - write_report
+    - commit
+    - push
+    - update_pr
+    - comment_pr
+
+transport:
+  method: repository_file
+  packet_path: reports/2026-08-31-pr5-fix-verification-handoff.yaml
+  packet_url: null
+  transport_note: Final PR HEAD and exact-head CI result are published in the PR comment because this handoff file cannot contain its own future commit SHA.

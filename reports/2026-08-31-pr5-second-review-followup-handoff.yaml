@@ -1,0 +1,523 @@
+schema_version: 3
+producer:
+  skill: chat-implementation-worker
+  mode: review_followup
+  generated_at: 2026-08-31T22:58:00+09:00
+
+repository: ssaattww/Devo6.Interval
+issue_or_pr: "PR #5"
+task_id: null
+branch: docs/task-and-phase-plan
+base_ref: main
+target:
+  current_head: unknown
+  reviewed_head: 3e0169bc128512e04548f2096a474fe30e3dbd15
+  commit_range: "48db680c41887cb9f10967092d938f2f2efd4ca2..unknown"
+
+verification:
+  capability: remote_ci_only
+  capability_evidence:
+    - "Repository reads/writes are required to use the GitHub connector; no checked-out executable repository is available to this chat runtime."
+    - "The repository has no executable production/test project yet, so source build/test is not applicable for this documentation-only follow-up."
+  technical_head: unknown
+  administrative_parent: 9abed92220bdb56c240097afb93406b04f799747
+  commit:
+    state: commit_pending
+    review_target_sha: null
+  push:
+    state: push_pending
+    head_sha: unknown
+  ci_wait:
+    state: ci_wait_pending
+    required_for: route_verification
+  final_publication:
+    sequence: final_push_then_authorized_pr_create_or_update_then_exact_head_pull_request_ci_wait
+    pr_action: update
+
+authoritative_requirements:
+  - source: user_instruction
+    reference: "Current chat: 指摘対応"
+    summary: "Address the latest PR #5 review findings."
+  - source: repository_instruction
+    reference: "Project instruction for ssaattww/Devo6.Interval"
+    summary: "Use GitHub connector for repository/PR operations; save detailed report and concise PR comment; never merge; CI evidence must match the PR current HEAD SHA exactly."
+  - source: design
+    reference: "doc/Design/detail/IntervalArithmetic.md §§30.1-30.3"
+    summary: "Periodic reducer supports operation-specific Sin/Cos extrema and Tan poles; 0 is on the Cos 2kπ maximum lattice, not on the Tan pole lattice."
+  - source: pr
+    reference: "PR #5 review PRR_kwDOUH4A7c8AAAABLd-UPA"
+    summary: "Finding-limited follow-up for F-PR5-013 and F-PR5-014; previously closed F-PR5-001 through F-PR5-012 remain closed unless regression is found."
+  - source: other
+    reference: "/mnt/data/chatgpt-worker-skills/chat-handoff-manager/SKILL.md"
+    summary: "Handoff writers must emit complete schema version 3 typed projection plus lossless source_payloads and transport information."
+
+development_policy:
+  method: documentation_review_followup
+  testing_order: "No source TDD applies because this change edits planning/report/handoff documents only; preserve the repository's future TDD requirements in the task definitions."
+  governing_source: "Project instruction + chat-implementation-worker/implementation-worker Skills"
+
+validation_plan:
+  commands:
+    - "GitHub compare 48db680c41887cb9f10967092d938f2f2efd4ca2..final technical HEAD"
+    - "Refetch modified task/phase/handoff/report files from the PR branch and inspect focused F-PR5-013/F-PR5-014 evidence"
+    - "Fetch workflow runs only for the final PR current HEAD SHA"
+  required_failure_diagnostics:
+    - "If a workflow exists and fails, preserve test result, stdout, stderr, diagnostic logs and relevant artifacts as required by project instructions."
+    - "If no final-HEAD workflow run exists, record CI未実施 and do not substitute another SHA."
+
+blocked: []
+
+authorized_actions:
+  - read_repository
+  - edit_documentation
+  - write_handoff
+  - write_report
+  - commit
+  - push
+  - update_pr
+  - comment_pr
+
+write_boundary:
+  allowed:
+    - path_or_operation: "tasks/tasks-status.md"
+      reason: "F-PR5-013 acceptance-criteria correction and finding traceability."
+    - path_or_operation: "tasks/phases-status.md"
+      reason: "F-PR5-013 phase-level acceptance correction."
+    - path_or_operation: "reports/2026-08-31-pr5-second-review-followup-handoff.yaml"
+      reason: "F-PR5-014 requires regeneration as a complete schema v3 packet."
+    - path_or_operation: "reports/2026-08-31-pr5-third-review-followup.md"
+      reason: "Detailed implementation follow-up report required by project instructions."
+    - path_or_operation: "PR #5 body/comment"
+      reason: "Publish concise summary, final HEAD and exact-head CI status."
+  forbidden:
+    - path_or_operation: "src/**, tests/**, executable workflow changes"
+      reason: "Out of scope; this follow-up is documentation/handoff only."
+    - path_or_operation: "Previously closed F-PR5-001 through F-PR5-012 acceptance criteria except traceability references"
+      reason: "Latest normal review explicitly limits the fix scope to F-PR5-013/F-PR5-014."
+    - path_or_operation: "merge PR #5"
+      reason: "Merge is reserved for the user."
+
+scope:
+  - "F-PR5-013: remove ambiguous operation-independent critical/pole=none from +0.0 periodic reducer fixture and separate Cos/Tan operation-specific decisions."
+  - "F-PR5-014: regenerate the implementation follow-up handoff as complete chat-handoff-manager schema version 3."
+non_goals:
+  - "Reopen or rewrite findings F-PR5-001 through F-PR5-012 that the latest review verified as closed."
+  - "Implement interval arithmetic source code or tests."
+  - "Add an empty diagnostic workflow before executable projects exist."
+  - "Merge the PR."
+
+files:
+  changed:
+    - path: tasks/tasks-status.md
+      purpose: "F-PR5-013 reducer/operation fixture separation and finding traceability."
+    - path: tasks/phases-status.md
+      purpose: "F-PR5-013 phase-level reducer/operation fixture separation."
+    - path: reports/2026-08-31-pr5-second-review-followup-handoff.yaml
+      purpose: "F-PR5-014 complete schema v3 handoff packet."
+    - path: reports/2026-08-31-pr5-third-review-followup.md
+      purpose: "Detailed report; created after this handoff technical commit."
+  inspected:
+    - path: doc/Design/detail/IntervalArithmetic.md
+      purpose: "Confirm §30.1 Sin critical lattice, §30.2 Cos 2kπ maximum lattice, and §30.3 Tan π/2+kπ pole lattice."
+    - path: reports/2026-08-31-pr5-second-fix-verification.md
+      purpose: "Authoritative latest normal-review findings and reviewed-head identity."
+    - path: reports/2026-08-31-pr5-second-review-followup-handoff.yaml
+      purpose: "Inspect the schema-v3 deficiencies identified by F-PR5-014."
+  intentionally_untouched:
+    - path_or_area: "F-PR5-001 through F-PR5-012 implementation acceptance content"
+      reason: "Latest fix verification explicitly closed those findings."
+    - path_or_area: ".github/workflows/**"
+      reason: "Executable production/test projects do not yet exist; design requires diagnostic workflow at P1-001."
+    - path_or_area: "src/** and tests/**"
+      reason: "No implementation scope in this PR follow-up."
+
+commands:
+  - command: "GitHub compare 48db680c41887cb9f10967092d938f2f2efd4ca2..9abed92220bdb56c240097afb93406b04f799747"
+    purpose: "Verify focused F-PR5-013 technical diff before handoff regeneration."
+    exit_code: 0
+    result: passed
+    head_sha: 9abed92220bdb56c240097afb93406b04f799747
+    evidence: "ahead_by=2, behind_by=0; only tasks/tasks-status.md and tasks/phases-status.md changed."
+  - command: "Source build/test"
+    purpose: "Validate executable implementation."
+    exit_code: unknown
+    result: not_run
+    head_sha: unknown
+    evidence: "Not applicable: repository still has no executable production/test project; follow-up is documentation-only."
+
+tests:
+  - name: "F-PR5-013 acceptance text inspection"
+    phase: verification
+    result: passed
+    head_sha: 9abed92220bdb56c240097afb93406b04f799747
+    evidence: "Reducer +0.0 fixture now requires only quadrant=0, k=0, reduced remainder=+0.0; Cos maximum and Tan non-pole are operation-specific."
+  - name: "F-PR5-014 schema-v3 structural validation"
+    phase: verification
+    result: passed
+    head_sha: unknown
+    evidence: "This packet populates required typed sections and preserves work-context/implementation/report outputs under source_payloads; self commit remains commit_pending."
+
+ci:
+  required: true
+  workflow: null
+  run_id: null
+  head_sha: unknown
+  conclusion: unknown
+  artifacts: []
+
+implementation:
+  outcome: completed
+  final_head: unknown
+  commits:
+    - sha: 3eaf1b690b7a151b0de5cd67e5ff3a665e2bf881
+      purpose: "Correct F-PR5-013 task acceptance semantics and add F-PR5-013/F-PR5-014 traceability."
+    - sha: 9abed92220bdb56c240097afb93406b04f799747
+      purpose: "Align Phase 4D phase criteria with operation-specific periodic decisions."
+  addressed_findings:
+    - id: F-PR5-013
+      reviewed_head: 3e0169bc128512e04548f2096a474fe30e3dbd15
+      disposition: addressed
+      evidence: "P4D-000/P4D-001 now limit reducer output to quadrant/k/remainder; P4D-002 fixes +0.0 as Cos maximum and Sin non-extremum; P4D-003 fixes +0.0 as non-pole for Tan."
+    - id: F-PR5-014
+      reviewed_head: 3e0169bc128512e04548f2096a474fe30e3dbd15
+      disposition: addressed
+      evidence: "This handoff is regenerated using chat-handoff-manager schema v3 with typed projection, source_payloads, full finding data, pending self-commit state, transport, and next-chat requested permissions."
+  failure_diagnostics: []
+  blocked_items: []
+  summary:
+    - "Only the two latest findings were modified."
+    - "No source/test/workflow implementation was changed."
+    - "Final technical HEAD is intentionally unknown inside this self-containing handoff until the handoff commit is created."
+
+review:
+  mode: fix_verification
+  reviewed_head: 3e0169bc128512e04548f2096a474fe30e3dbd15
+  reviewer:
+    identity: "same normal reviewer that submitted PR review PRR_kwDOUH4A7c8AAAABLd-UPA"
+    role: normal_reviewer
+    continuity:
+      previous_reviewer_identity: "same normal reviewer used for the earlier PR #5 fix-verification rounds"
+      changed: false
+      reason: null
+    independence:
+      implemented_change: false
+      implemented_review_fix: false
+      served_as_normal_reviewer: true
+      inherited_conversation: true
+      evidence:
+        - "Review body states this is the same normal reviewer and limits the next verification to F-PR5-013/F-PR5-014."
+  verdict: fail
+  required_coverage:
+    - criterion: "F-PR5-013 reducer fixture semantic consistency"
+      disposition: checked_finding
+      evidence: "Latest review found +0.0 critical/pole=none ambiguous and contradictory with Cos 2kπ maximum lattice."
+    - criterion: "F-PR5-014 handoff schema-v3 conformance"
+      disposition: checked_finding
+      evidence: "Latest review found required typed sections/source_payloads/transport absent and stale pending state."
+    - criterion: "Previously closed findings F-PR5-001 through F-PR5-012"
+      disposition: checked_no_finding
+      evidence: "Latest review explicitly confirms closure and limits the next fix verification to F-PR5-013/F-PR5-014."
+  independent_closure:
+    initial_independent_reviewed_head: null
+    closure_reviewed_heads: []
+    reviewer_continuity: null
+    closure_scope: []
+    completeness_matrix: []
+  validation_assessment:
+    - item: "Source build/test"
+      result: not_applicable
+      evidence: "No executable production/test project exists."
+    - item: "Current-head CI at latest review"
+      result: unavailable
+      evidence: "Review recorded zero matching runs/status for 48db680c41887cb9f10967092d938f2f2efd4ca2."
+  reserved_report_paths:
+    - reports/2026-08-31-pr5-third-review-followup.md
+  report_attestation:
+    allowed: false
+    reviewed_implementation_head: null
+    allowed_paths: []
+    required_first_parent: null
+    maximum_commits_after_reviewed_head: null
+    forbidden_path_classes: []
+    no_later_commits_required: not_applicable
+    validation_status: not_applicable
+    validation_evidence: []
+  summary:
+    - "The latest normal review closed F-PR5-001 through F-PR5-012 and opened only F-PR5-013/F-PR5-014."
+    - "A finding-limited fix verification by the same normal reviewer is the required next review action."
+
+report:
+  report_type: implementation_report
+  outcome: rendered
+  persistence_mode: repository_file
+  paths:
+    - reports/2026-08-31-pr5-third-review-followup.md
+  reviewed_head: 3e0169bc128512e04548f2096a474fe30e3dbd15
+  attestation_head: null
+  pr_comments: []
+  summary:
+    - "Detailed report will be persisted after this technical handoff commit; the later report commit is administrative and its final HEAD/CI are recorded externally in PR metadata/comment."
+
+findings:
+  - id: F-PR5-013
+    severity: medium
+    origin: introduced_by_fix
+    location: "tasks/tasks-status.md P4D-000/P4D-001 and tasks/phases-status.md Phase 4D preflight"
+    description: "+0.0 reducer fixture used an operation-independent critical/pole=none decision even though 0 is a Cos maximum lattice point and the meaning is function-dependent."
+    impact: "A worker could implement or validate a reducer contract that contradicts Cos semantics or conflates Cos extrema with Tan poles."
+    evidence: "Design §30.2 defines 2kπ as the Cos +1 critical lattice; 0=2*0*π. The latest review explicitly identifies the conflict."
+    required_action: "Restrict reducer fixture to reducer outputs such as quadrant/k/remainder and move Cos maximum/Sin extremum/Tan pole expectations into operation-specific fixtures."
+  - id: F-PR5-014
+    severity: medium
+    origin: introduced_by_fix
+    location: "reports/2026-08-31-pr5-second-review-followup-handoff.yaml"
+    description: "The declared schema_version 3 packet omitted required typed sections, source_payloads and transport data and retained stale pending values without an external final-state reference."
+    impact: "A new chat cannot losslessly reconstruct work context, exact finding evidence, permission boundaries, final publication state or CI identity from the packet."
+    evidence: "chat-handoff-manager schema v3 requires target/verification/review/report/findings/held/unexplored/unknown/not_applicable/remaining_risks/source_payloads/extensions/next_action/transport and lossless core outputs."
+    required_action: "Regenerate a complete schema v3 packet, keep the self-commit SHA as unknown/commit_pending, preserve full core outputs and finding details, and make final HEAD/exact-head CI traceable through transport/PR publication."
+
+held: []
+unexplored: []
+unknown:
+  - field_or_fact: "Final PR current HEAD after this handoff and the later detailed-report commit"
+    reason: "Those commits do not exist at packet generation time; self-referential future SHAs must not be invented."
+  - field_or_fact: "Exact-head pull_request CI result for final PR current HEAD"
+    reason: "Final HEAD does not exist until repository persistence completes."
+not_applicable:
+  - field_or_area: "Source/test execution"
+    reason: "Documentation-only follow-up and no executable production/test project exists."
+  - field_or_area: "Independent final review attestation"
+    reason: "This is a normal-review follow-up, not an independent final review."
+remaining_risks:
+  - "F-PR5-013/F-PR5-014 remain implementation-worker addressed, not reviewer-closed, until the same normal reviewer performs finding-limited fix verification."
+  - "No exact-head CI evidence exists until final publication is complete; another SHA must not be substituted."
+
+source_payloads:
+  - source_skill: work-context-manager
+    output_contract_version: unknown
+    content_type: application/yaml
+    payload:
+      repository: ssaattww/Devo6.Interval
+      issue_or_pr: "PR #5"
+      task_id: null
+      mode: implementation
+      branch: docs/task-and-phase-plan
+      base_ref: main
+      current_head: 48db680c41887cb9f10967092d938f2f2efd4ca2
+      reviewed_head: 3e0169bc128512e04548f2096a474fe30e3dbd15
+      verification_capability: remote_ci_only
+      verification_capability_evidence:
+        - "Repository access/update is via GitHub connector; no local checked-out executable repository is available."
+        - "Executable source/test projects do not exist yet."
+      execution_state:
+        technical_head: unknown
+        administrative_parent: 48db680c41887cb9f10967092d938f2f2efd4ca2
+        commit: commit_pending
+        push: push_pending
+        ci_wait: ci_wait_pending
+        full_local_equivalence_gate:
+          state: not_required
+          candidate_head: unknown
+          invalidated_runs: []
+      scope:
+        - "Address F-PR5-013."
+        - "Address F-PR5-014."
+      non_goals:
+        - "Modify closed F-PR5-001 through F-PR5-012."
+        - "Implement source/tests/workflows."
+        - "Merge."
+      authoritative_requirements:
+        - source: "Current user instruction"
+          reference: "指摘対応"
+          summary: "Address latest review findings."
+        - source: "Latest PR review"
+          reference: "PRR_kwDOUH4A7c8AAAABLd-UPA"
+          summary: "Only F-PR5-013/F-PR5-014 require fixes."
+        - source: "Design"
+          reference: "§§30.1-30.3"
+          summary: "Separate periodic function-specific extrema/poles from reducer mechanics."
+        - source: "Uploaded Skill"
+          reference: "chat-handoff-manager/SKILL.md"
+          summary: "Emit lossless schema v3 handoff."
+      write_boundary:
+        allowed:
+          - tasks/tasks-status.md
+          - tasks/phases-status.md
+          - reports/2026-08-31-pr5-second-review-followup-handoff.yaml
+          - reports/2026-08-31-pr5-third-review-followup.md
+          - PR #5 metadata/comment
+        forbidden:
+          - src/**
+          - tests/**
+          - .github/workflows/**
+          - merge
+      development_policy:
+        method: documentation_review_followup
+        testing_order: validation_only_for_docs
+      validation:
+        commands:
+          - "GitHub compare latest review HEAD to technical fix HEAD"
+          - "Refetch modified documents"
+          - "Final exact-head workflow-run query"
+        required_failure_diagnostics:
+          - "Record CI未実施 when no matching final-head run exists; never substitute another SHA."
+      ci:
+        matching_run: null
+        conclusion: unknown
+      unknown:
+        - "Final self-containing handoff/report commit SHA"
+        - "Final exact-head CI state"
+      blocked: []
+      remaining_risks:
+        - "Reviewer closure is still pending."
+  - source_skill: implementation-worker
+    output_contract_version: unknown
+    content_type: application/yaml
+    payload:
+      mode: review_followup
+      accepted_scope:
+        - F-PR5-013
+        - F-PR5-014
+      non_goals:
+        - "Do not alter reviewer-closed findings F-PR5-001 through F-PR5-012."
+        - "Do not implement product source/tests/workflows or merge."
+      requirements_and_design_references:
+        - "PRR_kwDOUH4A7c8AAAABLd-UPA"
+        - "doc/Design/detail/IntervalArithmetic.md §§30.1-30.3"
+        - "chat-handoff-manager/SKILL.md schema version 3"
+      changed_files:
+        - path: tasks/tasks-status.md
+          purpose: "Correct reducer/operation-specific acceptance semantics."
+        - path: tasks/phases-status.md
+          purpose: "Correct Phase 4D acceptance semantics."
+        - path: reports/2026-08-31-pr5-second-review-followup-handoff.yaml
+          purpose: "Regenerate schema v3 handoff."
+      intentionally_untouched_areas:
+        - "F-PR5-001 through F-PR5-012 content, except traceability range/table."
+        - "src/**, tests/**, workflows."
+      validation_commands_and_results:
+        - command: "GitHub compare 48db680c41887cb9f10967092d938f2f2efd4ca2..9abed92220bdb56c240097afb93406b04f799747"
+          result: "passed; ahead_by=2, changed only task/phase documents"
+        - command: "Source build/test"
+          result: "not_applicable; no executable project"
+      failure_diagnostics_and_artifacts: []
+      verification_capability: remote_ci_only
+      validation_evidence:
+        - "Focused document diff inspected."
+        - "Final exact-head CI intentionally pending until final publication."
+      review_target_commit_identity: unknown
+      push_state: push_pending
+      matching_ci_evidence: null
+      final_technical_head: unknown
+      administrative_parent: 9abed92220bdb56c240097afb93406b04f799747
+      blocked_items: []
+      unknowns:
+        - "Self handoff commit SHA and later report commit SHA."
+      remaining_risks:
+        - "Same normal reviewer must verify F-PR5-013/F-PR5-014."
+      next_required_action: "Persist detailed report, update PR, query exact final-head CI, and return finding-limited fix verification to the same normal reviewer."
+  - source_skill: report-writer
+    output_contract_version: unknown
+    content_type: application/yaml
+    payload:
+      report_type: implementation_report
+      complete_body: |
+        # PR #5 third review follow-up
+
+        This finding-limited review follow-up addresses only F-PR5-013 and F-PR5-014 from the normal review of technical HEAD 3e0169bc128512e04548f2096a474fe30e3dbd15. F-PR5-013 is corrected by limiting the +0.0 reducer fixture to quadrant=0, k=0 and reduced remainder=+0.0, while moving Cos maximum and Tan non-pole expectations into P4D-002/P4D-003. F-PR5-014 is corrected by regenerating the handoff as a complete chat-handoff-manager schema version 3 packet with typed projection, source_payloads, full finding evidence, explicit permission boundaries, pending self-commit identity and external final-publication transport.
+
+        No product source, tests, executable workflow, or previously closed finding semantics were changed. Source build/test is not applicable because the repository has no executable production/test project. Final current-HEAD CI must be queried only after the handoff/report persistence commits exist; if no run with the exact PR current HEAD exists, the result is CI未実施 and another SHA must not be substituted. Merge is not performed.
+      evidence_sources:
+        - "PR review PRR_kwDOUH4A7c8AAAABLd-UPA"
+        - "tasks/tasks-status.md"
+        - "tasks/phases-status.md"
+        - "chat-handoff-manager/SKILL.md"
+      target_identity:
+        branch: docs/task-and-phase-plan
+        base_ref: main
+        current_head: unknown
+        reviewed_implementation_head: 3e0169bc128512e04548f2096a474fe30e3dbd15
+      verification:
+        capability: remote_ci_only
+        technical_head: unknown
+        administrative_parent: 9abed92220bdb56c240097afb93406b04f799747
+        commit_state: commit_pending
+        push_state: push_pending
+        ci_wait_state: ci_wait_pending
+      independent_closure:
+        initial_independent_reviewed_head: null
+        closure_reviewed_heads: []
+        reviewer_continuity: null
+        closure_scope: []
+        completeness_matrix: []
+      severity_records:
+        - finding_id: F-PR5-013
+          source_severity: medium
+          new_severity: null
+          reason: null
+          approved_by: null
+          record_type: preserved
+        - finding_id: F-PR5-014
+          source_severity: medium
+          new_severity: null
+          reason: null
+          approved_by: null
+          record_type: preserved
+      persistence:
+        mode: repository_file
+        reserved_paths:
+          - reports/2026-08-31-pr5-third-review-followup.md
+        report_attestation_head: null
+      concise_pr_comment_body: "F-PR5-013/F-PR5-014を対応。reducerの+0.0 fixtureをquadrant/k/remainderに限定しCos/Tan判定をoperation-specificへ分離、handoffを完全なschema v3 packetへ再生成。final HEAD一致CIのみ確認し、なければCI未実施。mergeなし。"
+      unresolved_discrepancies: []
+
+extensions:
+  - namespace: pr5_closed_findings
+    payload:
+      closed_by_latest_review:
+        - F-PR5-001
+        - F-PR5-002
+        - F-PR5-003
+        - F-PR5-004
+        - F-PR5-005
+        - F-PR5-006
+        - F-PR5-007
+        - F-PR5-008
+        - F-PR5-009
+        - F-PR5-010
+        - F-PR5-011
+        - F-PR5-012
+  - namespace: final_state_transport
+    payload:
+      final_head_source: "PR #5 current HEAD after repository persistence"
+      exact_head_ci_source: "PR #5 concise follow-up comment posted after final exact-head workflow query"
+      rule: "Do not infer final HEAD or CI from this packet's future self-commit; use the external PR publication record."
+
+next_action:
+  type: review
+  target_skill: review-worker
+  mode: fix_verification
+  summary: "Run finding-limited fix verification for F-PR5-013 and F-PR5-014 with the same normal reviewer."
+  instructions:
+    - "Verify P4D reducer fixture no longer makes an operation-independent critical/pole assertion."
+    - "Verify Cos +0.0 maximum and Tan +0.0 non-pole are operation-specific and consistent with design §§30.2/30.3."
+    - "Validate this handoff against chat-handoff-manager schema version 3, including typed projection, source_payloads, findings and transport."
+    - "Preserve closure of F-PR5-001 through F-PR5-012 unless a regression is directly observed."
+    - "Use only a workflow run whose head_sha exactly equals the PR current HEAD; if absent, report CI未実施."
+    - "Do not merge."
+  required_attachments_or_references:
+    - "PR #5"
+    - "reports/2026-08-31-pr5-third-review-followup.md"
+    - "reports/2026-08-31-pr5-second-review-followup-handoff.yaml"
+    - "tasks/tasks-status.md"
+    - "tasks/phases-status.md"
+  requested_authorized_actions:
+    - read_repository
+    - write_report
+    - comment_pr
+
+transport:
+  method: repository_file
+  packet_path: reports/2026-08-31-pr5-second-review-followup-handoff.yaml
+  packet_url: "https://github.com/ssaattww/Devo6.Interval/blob/docs/task-and-phase-plan/reports/2026-08-31-pr5-second-review-followup-handoff.yaml"
+  transport_note: "This packet intentionally leaves its own future commit SHA and later report commit/final PR HEAD unknown. After persistence, the wrapper records the actual PR current HEAD and exact-head CI result in PR #5 metadata/comment. Current-chat permissions do not transfer; requested_authorized_actions are proposals for the next user-started chat."

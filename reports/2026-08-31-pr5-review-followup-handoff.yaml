@@ -1,0 +1,246 @@
+schema_version: 3
+producer:
+  skill: chat-implementation-worker
+  mode: review_followup
+  generated_at: 2026-08-31T08:40:00+09:00
+
+repository: ssaattww/Devo6.Interval
+issue_or_pr: "PR #5"
+task_id: null
+branch: docs/task-and-phase-plan
+base_ref: main
+
+target:
+  reviewed_head: b20fa7d7c31326770fac925a4e0c1b35cf72de6b
+  followup_start_head: c46ba0ca7af476d1ed2857532f5efbe86f5cc0e2
+  technical_head: 5d87d2be94e6e2c48b292f90119e10cf621153b0
+  exact_head_checked_before_this_metadata_commit: df3674530d3ecd6ab701a8293ea21a7feadb540c
+  final_pr_head: pending_after_this_metadata_commit
+
+verification:
+  capability: remote_ci_only
+  capability_evidence:
+    - Repository access and writes were performed through the GitHub connector.
+    - The repository has no executable production/test project and no executable GitHub Actions workflow.
+  technical_head: 5d87d2be94e6e2c48b292f90119e10cf621153b0
+  detailed_report_commit: 1762f3eb05ce6a2df0fb89d09f4e5dbfadf9ee8c
+  prior_handoff_commit: df3674530d3ecd6ab701a8293ea21a7feadb540c
+  exact_head_ci_observation:
+    checked_head: df3674530d3ecd6ab701a8293ea21a7feadb540c
+    matching_workflow_runs: 0
+    conclusion: CI未実施
+    substituted_other_sha: false
+  commit:
+    state: committed
+    review_target_sha: 5d87d2be94e6e2c48b292f90119e10cf621153b0
+  push:
+    state: pushed
+    head_sha: pending_after_this_metadata_commit
+  ci_wait:
+    state: final_exact_head_recheck_required_after_this_commit
+    required_for: route_verification
+  final_publication:
+    sequence: persist_metadata_then_fetch_new_pr_head_then_exact_head_ci_recheck_then_update_pr_and_comment
+    pr_action: update
+
+authoritative_requirements:
+  - source: user_instruction
+    reference: current user request
+    summary: Address PR #5 review findings and make every task acceptance criterion concrete.
+  - source: repository_instruction
+    reference: project instructions
+    summary: Use GitHub connector, exact-head CI only, detailed report plus concise PR comment, and do not merge.
+  - source: design
+    reference: doc/Design/detail/IntervalArithmetic.md version 5
+    summary: Phase order, TDD, diagnostic artifacts, interval semantics, Phase 4 start gates, AOT/performance requirements.
+  - source: pr_review
+    reference: reports/2026-08-31-pr5-initial-review.md
+    summary: F-PR5-001 through F-PR5-010 require follow-up and normal-review fix verification.
+
+development_policy:
+  method: documentation review follow-up
+  testing_order: documentation validation for this PR; future source tasks remain Red then Green
+  governing_source: project instructions and detailed design
+
+scope:
+  - Make task acceptance criteria directly judgeable from task text wherever the design has a fixed answer.
+  - Add Phase 4A through 4E implementation preflight review gates.
+  - Address F-PR5-001 through F-PR5-010.
+  - Preserve numerical design semantics.
+non_goals:
+  - Implement production source or tests.
+  - Change doc/Design numerical semantics.
+  - Add an empty CI workflow before P1-001 creates executable projects.
+  - Merge PR #5.
+
+write_boundary:
+  allowed:
+    - path_or_operation: tasks/phases-status.md
+      reason: Phase start/completion gates require review-finding fixes.
+    - path_or_operation: tasks/tasks-status.md
+      reason: Primary acceptance-criteria artifact.
+    - path_or_operation: reports/2026-08-31-pr5-review-followup.md
+      reason: Required detailed report.
+    - path_or_operation: reports/2026-08-31-pr5-review-followup-handoff.yaml
+      reason: Required transportable handoff.
+    - path_or_operation: PR #5 body/comment
+      reason: Required concise publication.
+  forbidden:
+    - path_or_operation: doc/Design/**
+      reason: Numerical semantics are unchanged.
+    - path_or_operation: src/**
+      reason: Implementation has not started.
+    - path_or_operation: tests/**
+      reason: Implementation has not started.
+    - path_or_operation: .github/workflows/**
+      reason: Design section 16.1 assigns diagnostic workflow creation to P1-001 with executable projects.
+
+files:
+  changed:
+    - path: tasks/phases-status.md
+      purpose: Objective phase gates and Phase 4 preflight requirements.
+    - path: tasks/tasks-status.md
+      purpose: 67 concrete tasks/gates and finding mapping.
+    - path: reports/2026-08-31-pr5-review-followup.md
+      purpose: Detailed follow-up evidence.
+    - path: reports/2026-08-31-pr5-review-followup-handoff.yaml
+      purpose: Continuation packet.
+  intentionally_untouched:
+    - path_or_area: doc/Design/**
+      reason: No design-semantic change.
+    - path_or_area: src/** and tests/**
+      reason: No implementation work in this PR.
+    - path_or_area: .github/workflows/**
+      reason: No executable target exists yet.
+
+validation:
+  compare:
+    base: c46ba0ca7af476d1ed2857532f5efbe86f5cc0e2
+    technical_head: 5d87d2be94e6e2c48b292f90119e10cf621153b0
+    status: ahead
+    behind_by: 0
+    source_test_workflow_changes: false
+  content_refetch:
+    result: passed
+    evidence:
+      - Phase 4A-4E preflight dependencies are present.
+      - P1-006 and P1-008 contain exact correction predicates.
+      - P1-009 contains all six nonzero-denominator interval-division formulas.
+      - P1-013 contains NativeAOT/trimming/hot-path gates.
+      - P3-006 contains fixed benchmark workload, metric and threshold.
+      - P4D-005 contains six zero-touch general-Pow formulas.
+      - P4E-002 contains extended-division formulas.
+      - P4E-005 contains cancellative 3x3 expectations.
+      - P4E-009/P4E-010 contain parser and wire contracts.
+  build_test:
+    result: not_applicable
+    reason: Documentation-only repository phase; no executable project/test target exists.
+
+implementation:
+  outcome: completed
+  technical_head: 5d87d2be94e6e2c48b292f90119e10cf621153b0
+  commits:
+    - sha: cbe2f3c66bcb201bd1e05b6362b90302d5682bd6
+      purpose: Make phase gates objectively testable.
+    - sha: 5c4c3c12490d16296867cdaf74015a6c7c8ab7ca
+      purpose: Make task acceptance criteria concrete and map review findings.
+    - sha: 5d87d2be94e6e2c48b292f90119e10cf621153b0
+      purpose: Replace remaining ambiguous acceptance wording with formulas and fixed cases.
+    - sha: 1762f3eb05ce6a2df0fb89d09f4e5dbfadf9ee8c
+      purpose: Finalize detailed follow-up report.
+  addressed_findings:
+    - id: F-PR5-001
+      severity: high
+      disposition: addressed
+      evidence: P4A-000/P4B-000/P4C-000/P4D-000/P4E-000 require reviewed SHA, verdict, report path, diagnostic workflow, smoke fixture, and pre-Red completion.
+    - id: F-PR5-002
+      severity: medium
+      disposition: addressed
+      evidence: P1-001 enumerates all required numeric diagnostic fields.
+    - id: F-PR5-003
+      severity: medium
+      disposition: addressed
+      evidence: P1-002 fixes negated-lower, qNaN 2-lane, one-sided NaN rejection, raw state, and ToString criteria.
+    - id: F-PR5-004
+      severity: medium
+      disposition: addressed
+      evidence: P1-006/P1-008 specify increment/decrement/no-correction predicates and fixed witnesses.
+    - id: F-PR5-005
+      severity: medium
+      disposition: addressed
+      evidence: Three public API scenarios and fixed benchmark workload/metric/threshold are present.
+    - id: F-PR5-006
+      severity: medium
+      disposition: addressed
+      evidence: Parser grammar, unbounded/hex/culture/resource fixtures, and no-recursion rule are present.
+    - id: F-PR5-007
+      severity: medium
+      disposition: addressed
+      evidence: Binary v1 is fixed to 18-byte little-endian layout with length-first rejection.
+    - id: F-PR5-008
+      severity: medium
+      disposition: addressed
+      evidence: P1-013 contains allocation/disassembly/NativeAOT/trimming/raw-result gates.
+    - id: F-PR5-009
+      severity: low
+      disposition: addressed
+      evidence: Decoration underlying byte and values 0/4/8/12/16 are fixed.
+    - id: F-PR5-010
+      severity: medium
+      disposition: addressed
+      evidence: P4B-007 contains conditional native backend qualification.
+
+review:
+  mode: fix_verification
+  initial_reviewed_head: b20fa7d7c31326770fac925a4e0c1b35cf72de6b
+  fix_target_technical_head: 5d87d2be94e6e2c48b292f90119e10cf621153b0
+  prior_verdict: fail
+  current_worker_verdict: not_applicable
+  required_verification_matrix:
+    - required_action
+    - document_path
+    - actual_fixture_or_evidence
+    - focused_evidence
+  reviewer_continuity: same_normal_reviewer_requested
+
+report:
+  report_type: implementation_report
+  outcome: updated
+  persistence_mode: repository_file
+  paths:
+    - reports/2026-08-31-pr5-review-followup.md
+    - reports/2026-08-31-pr5-review-followup-handoff.yaml
+  detailed_report_commit: 1762f3eb05ce6a2df0fb89d09f4e5dbfadf9ee8c
+
+held:
+  - item: exact-head CI after this metadata commit
+    reason: This metadata persistence itself advances PR HEAD once more.
+    verdict_impact: Recheck new PR current HEAD; if matching run count remains zero, publish CI未実施.
+unexplored: []
+not_applicable:
+  - field_or_area: source build/test
+    reason: No executable target exists.
+remaining_risks:
+  - Normal reviewer fix verification has not yet completed.
+
+next_action:
+  type: review
+  target_skill: chat-review-worker
+  mode: fix_verification
+  summary: Verify F-PR5-001 through F-PR5-010 against the final PR current HEAD.
+  instructions:
+    - Use the same normal reviewer continuity if possible.
+    - Verify all ten findings with required action -> document path -> actual fixture/evidence -> focused evidence.
+    - Use only workflow runs whose head_sha exactly equals the PR current HEAD.
+    - If no matching run exists, report CI未実施 and do not substitute another SHA.
+    - Do not merge.
+  required_attachments_or_references:
+    - reports/2026-08-31-pr5-initial-review.md
+    - reports/2026-08-31-pr5-review-followup.md
+    - tasks/tasks-status.md
+    - tasks/phases-status.md
+
+transport:
+  method: repository_file
+  packet_path: reports/2026-08-31-pr5-review-followup-handoff.yaml
+  transport_note: Because this file cannot contain its own persistence SHA, the final PR HEAD and exact-head CI result are published in the PR comment.
