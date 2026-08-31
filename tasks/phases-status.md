@@ -19,6 +19,7 @@
 3. `N/A`を許す条件は本文で明示した項目だけとし、reportへ `N/A` の理由を1行以上記録する。
 4. CI証拠は、確認時点のPR current HEAD SHAとworkflow runの`head_sha`が一致するrunだけを採用する。一致runが0件なら `CI未実施` と記録する。
 5. Phase 4A～4Eは、それぞれの先頭preflight taskが `完了` になるまで最初のsource Red commitを作成しない。
+6. Phase 4 preflightで要求する成功はfixture/reference **metadataの列挙・parse**だけを対象とし、未実装production APIの成功を要求しない。production behaviorの失敗確認は各subphase最初のsource taskのRed commitで行う。
 
 ## 3. フェーズサマリー
 
@@ -140,16 +141,18 @@ Phase 4A～4Eは各subphaseごとに `P4?-000` preflightを置く。
 - [ ] 対象設計sectionをnormal reviewし、review reportに `reviewed HEAD=<40桁SHA>`、`verdict=pass`、`unresolved findings=0` を記録する。
 - [ ] review report pathとreviewed HEADをpreflight task reportから追跡できる。
 - [ ] `P1-001`で追加したdiagnostic artifact workflowがrepositoryに存在する。
-- [ ] 対象subphaseの最初のsmoke fixtureを既存test/conformance/reference harnessから実行し終了コード0となる。
+- [ ] 当該subphase最初のsource taskに対応するfixture/reference metadataとして `caseId / input / expected / reference` を登録する。
+- [ ] metadata validation commandは未実装production targetを呼ばず、登録fixtureを列挙・parseして終了コード0となる。
 - [ ] preflight taskのstatusが `完了` になる前に最初のsource Red commitを作成しない。
+- [ ] preflight完了後、最初のsource taskで登録fixtureをproduction targetへ適用し、実装前に終了コード非0となるRedを確認する。
 
 ---
 
 ## 9. Phase 4A: 集合・関係・数値的属性・整数値関数
 
-### Preflight smoke
+### Preflight fixture definition
 
-`Entire.Contains(+Infinity) == false`、`Entire.Contains(0.0) == true` を既存test harnessで実行する。
+`P4A-001 Contains / IsBounded`用に `Entire.Contains(+Infinity)==false`、`Entire.Contains(0.0)==true` のmetadataを登録し、production `Contains`を呼ばずにharnessから列挙・parseできることを確認する。
 
 ### 完了条件
 
@@ -167,9 +170,9 @@ Phase 4A～4Eは各subphaseごとに `P4?-000` preflightを置く。
 
 ## 10. Phase 4B: 代数関数・区間定数
 
-### Preflight smoke
+### Preflight fixture definition
 
-`Square([-2,1])=[-0.0,4]` のexpected matrixをtest harnessへ読み込めることを確認する。
+`P4B-001 tight IntervalConstants`用に `Pi` のexpected Lower bits=`0x400921fb54442d18`, Upper bits=`0x400921fb54442d19`、reference=`MPFR RNDD/RNDU` をmetadataとして登録し、production `IntervalConstants.Pi`を参照せず列挙・parseできることを確認する。
 
 ### 完了条件
 
@@ -181,16 +184,18 @@ Phase 4A～4Eは各subphaseごとに `P4?-000` preflightを置く。
 - [ ] `FusedMultiplyAdd` endpointがexact `x*y+z`を1回丸めし、同一入力で `(X*Y)+Z` のsubset-or-equalとなるfixtureをpassする。
 - [ ] MPFR reference corpusにはMPFR version、RNDD/RNDU、generator hash、corpus SHA-256をlockする。
 - [ ] managed-only backend採用時はreportへ `native_backend_gate=N/A` と理由を記録する。
-- [ ] native backendを採用する場合はinterop/copy/dispatch込みbenchmarkがPhase 3と同じ事前固定performance gateをpassし、x64/ARM64配布asset、ABI compatibility、concurrent-call test、NativeAOT publish、trimming publish、license/NOTICE、binary redistribution条件をすべてpass/保存する。
+- [ ] native backendのperformance policyはcandidate測定前に固定し、production採用予定のelementary endpoint adapter entrypointを実際に通るend-to-end workloadをfunction単位で測定する。Add/Sub/Mul/Div workloadを代用しない。
+- [ ] native performance baselineは同じproduction adapter contractのmanaged endpoint backendとし、N>=256でfunction別native/managed median ratioの幾何平均`<=0.95`、各workload`<=1.02`、allocation増加0 Bを満たすfunctionだけproduction dispatchへ採用する。
+- [ ] native backendを採用する場合はx64/ARM64配布asset、ABI compatibility、concurrent-call test、NativeAOT publish、trimming publish、license/NOTICE、binary redistribution条件をすべてpass/保存する。
 - [ ] native backend有無でpublic `Interval` API baseline diffが0件、canonical endpoint bitsが一致する。
 
 ---
 
 ## 11. Phase 4C: 単調な初等関数
 
-### Preflight smoke
+### Preflight fixture definition
 
-`Log([-1,1])=[-Infinity,+0.0]` をMPFR/reference harnessと比較できることを確認する。
+`P4C-001 Exp / Exp2 / Exp10`用に `Exp([0,0])=[1,1]` のmetadataを登録し、production `Exp`を呼ばずにharnessから列挙・parseできることを確認する。
 
 ### 完了条件
 
@@ -198,6 +203,7 @@ Phase 4A～4Eは各subphaseごとに `P4?-000` preflightを置く。
 - [ ] Log/Log2/Log10は`b<=0 -> Empty`、`a<=0<b -> lower=-Infinity`、`b=+Infinity -> upper=+Infinity`を固定fixtureでpassする。
 - [ ] Sinh/Tanh/Asinh/Atanはmonotonic endpoint式、Coshはnegative/positive/zero-crossing 3分岐のexpected endpointをpassする。
 - [ ] Acoshはdomain `[1,+Infinity)`、Asin/Acosは`[-1,1]`、Atanhは`(-1,1)`でclipし、domain内点が0件ならEmpty、open boundary接触時はlimit ±Infinityを返す。
+- [ ] Acosはclip後`[l,u]`に対して単調減少式`[AcosDown(u),AcosUp(l)]`を使用し、`Acos([0,1])=[AcosDown(1),AcosUp(0)]`の両endpoint bitsをMPFR fixtureと一致させる。
 - [ ] endpoint backendはcertified managed、検証済みcorrectly-rounded port、またはqualified directed native backendのいずれかで、BCL `Math.*`単独をcorrectness根拠にしない。
 - [ ] MPFR corpus全required caseでcanonical bits一致し、承認差異がある場合だけcaseId、expected、actual、reason、approvalをmanifestへ保存する。
 - [ ] support platformで通常入力を`PlatformNotSupportedException`へ送らない。
@@ -207,9 +213,9 @@ Phase 4A～4Eは各subphaseごとに `P4?-000` preflightを置く。
 
 ## 12. Phase 4D: 周期・特異点・多変数関数
 
-### Preflight smoke
+### Preflight fixture definition
 
-`Atan2(Zero,[-2,-1]) -> Pi` と `Sin([0,HalfPi]) -> [0,1]` のreference fixtureを読み込めることを確認する。
+`P4D-001 high-precision periodic reducer`用に input=`+0.0`、expected quadrant=`0`, k=`0`, critical/pole=`none` のmetadataを登録し、production reducerを呼ばずにharnessから列挙・parseできることを確認する。
 
 ### 完了条件
 
@@ -226,9 +232,17 @@ Phase 4A～4Eは各subphaseごとに `P4?-000` preflightを置く。
 
 ## 13. Phase 4E: 非連結結果・decorated interval・I/O・分割
 
-### Preflight smoke
+### Preflight fixture definition
 
-`DivideToUnion([1,2],Entire)` のexpected component count=2をexisting harnessへ読み込めることを確認する。
+`P4E-001 IntervalUnion2`用に `default(IntervalUnion2)` のexpected `Count=0`, `First=Empty`, `Second=Empty` metadataを登録し、production `IntervalUnion2`を参照せずharnessから列挙・parseできることを確認する。
+
+Phase 4E preflightでは次も必ず固定する。
+
+- exact text interchangeの必須formatを`R`とする。有限endpointはexact C99-style hexadecimal binary literal、Empty=`Empty`、Entire=`Entire`、unbounded endpoint=`±Infinity`を使用し、`R`をReject/N/Aにしない。
+- binary v1は18 byte固定。byte0=`0x01`; byte1=`0x00 Normal`または`0x01 Empty`; byte2..9=external Lower bits LE; byte10..17=external Upper bits LE。
+- `Normal`は全nonempty intervalを表す。`Empty` payloadは16 byte all-zeroのみcanonicalで、nonzero payloadはrejectする。
+- `Normal`のNaN endpoint、lower>upper、lower=+Infinity、upper=-Infinity、unknown state/versionはrejectする。lower=+0.0、upper=-0.0はdecode時にcanonical signed-zeroへ補正する。
+- Normal `[1,2]`、Zero、Entire、Emptyの4種類について18 byte全体のexpected hex列をfixtureへ固定する。
 
 ### 完了条件
 
@@ -240,8 +254,9 @@ Phase 4A～4Eは各subphaseごとに `P4?-000` preflightを置く。
 - [ ] `default(DecoratedInterval).IsNaI==true`, `NaI==NaI==true`, `NaI.SemanticallyEquals(any)==false`、result-state decoration capを固定fixtureでpassする。
 - [ ] parserは`[-Infinity,1]`, `[1,+Infinity]`, `[0.1]`, `0x1p+0`系exact hex fixtureをaccepted matrixとして、`[+Infinity,1]`, `[1,-Infinity]`, `[Infinity]`, `[NaN,1]`をrejected matrixとしてpassする。
 - [ ] parserはInvariantCulture固定、recursionなし、preflightで確定したmax input/significand/exponent digit limitのlimit値とlimit+1 fixtureをpassする。
-- [ ] binary interchange version 1は18 byte固定で、byte0=version、byte1=state、byte2..9=external Lower bits little-endian、byte10..17=external Upper bits little-endianとする。
-- [ ] binary decoderは17 byte/19 byteをendpoint decode前にrejectし、unknown version/state、NaN endpoint、reversed endpointをrejectする。
+- [ ] 必須`R` formatでNormal bounded、Zero、Empty、Entire、lower-unbounded、upper-unbounded、min-subnormal singletonをformat→parseし、canonical endpoint bits/stateが元値と一致する。x64/ARM64で出力textも一致する。
+- [ ] binary v1 encodeはpreflightの4 canonical 18-byte fixtureとbyte-for-byte一致する。
+- [ ] binary decoderは17 byte/19 byteをendpoint decode前にrejectし、unknown version/state、Normal NaN endpoint、reversed endpoint、noncanonical Empty payloadをrejectする。
 - [ ] Zero binary round-tripはLower=`-0.0` external bits、Upper=`+0.0` external bitsを保持する。
 - [ ] `TrySplitAt`と`TryBisect`はchildrenが元intervalをcoverし、各childが元interval subset、隣接endpointでstrict interior binary64がない場合falseとなる。
 - [ ] parser/binary decoder security review、x64/ARM64 canonical一致、backend間bitwise一致、API baseline updateが完了する。
