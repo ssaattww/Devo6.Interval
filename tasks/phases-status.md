@@ -215,11 +215,14 @@ Phase 4A～4Eは各subphaseごとに `P4?-000` preflightを置く。
 
 ### Preflight fixture definition
 
-`P4D-001 high-precision periodic reducer`用に input=`+0.0`、expected quadrant=`0`, k=`0`, critical/pole=`none` のmetadataを登録し、production reducerを呼ばずにharnessから列挙・parseできることを確認する。
+`P4D-001 high-precision periodic reducer`用に input=`+0.0`、expected quadrant=`0`, k=`0`, reduced remainder=`+0.0` のmetadataを登録し、production reducerを呼ばずにharnessから列挙・parseできることを確認する。reducer fixtureにはSin/Cos extremumまたはTan poleのoperation-specific判定を含めない。
 
 ### 完了条件
 
 - [ ] periodic reducerは`Math.PI`通常除算や`% (2*Math.PI)`だけでquadrant/pole判定せず、固定high-precision `2/pi`, `pi/2` tableを使用する。
+- [ ] +0.0 reducer fixtureはquadrant=0, k=0, reduced remainder=+0.0となり、operation非依存の`critical/pole=none`を要求しない。
+- [ ] Sin/Cosのoperation-specific判定では`0=2*0*pi`をCos maximum latticeとして扱い、`Cos([+0.0,+0.0])=[1,1]`かつ`cosExtremum=maximum`、同じ入力の`sinExtremum=none`となる。
+- [ ] Tanのoperation-specific判定では+0.0をpole扱いせず`isTanPole=false`とし、Cos maximum latticeとTan pole latticeを混同しない。
 - [ ] Sin/Cosはcritical latticeを含む区間でexact extrema `-1/+1`を返し、非有界または必要critical lattice双方を含む場合`[-1,1]`を返す。
 - [ ] Tanはpoleなし1 branchでdirected endpoints、poleへdomain内から接近可能ならEntire、poleしかdomainに残らない入力はEmptyとなる。
 - [ ] Atan2 negative-x branch cutの6 classを全件固定し、`Atan2([-1,0],[-2,-1])=[-pi,+pi]`, `Atan2(Zero,[-2,-1])=Pi`, `Atan2([0,1],[-2,-1])=QII..pi`, `Atan2([-1,1],[-2,-1])=[-pi,+pi]`をpassする。
