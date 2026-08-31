@@ -28,6 +28,15 @@ source実装を含むタスクには個別条件に加えて次を適用する�
 
 infra/documentation/review-gateのみのtaskはRed/Greenを要求しない。それ以外の条件は適用する。
 
+### Phase 4 preflightとTDDの境界
+
+`P4A-000`～`P4E-000` は、対象設計のreview完了、fixture/reference metadataの定義、harnessによるmetadata列挙・parse可能性だけを確認する。preflightでは未実装production APIを呼び出してGreenを要求しない。
+
+- [ ] preflight metadata validation commandはproduction targetを呼び出さず終了コード0となる。
+- [ ] 各subphaseの最初のsource task (`P4A-001`, `P4B-001`, `P4C-001`, `P4D-001`, `P4E-001`) がpreflight fixtureを初めてproduction targetへ適用し、実装前Redを確認する。
+- [ ] preflight完了前にsource Red commitを作成しない。
+- [ ] preflight fixtureは必ず当該subphaseの最初のsource taskが実装する機能を対象とし、後続taskの機能をRed fixtureとして先行実行しない。
+
 ## 3. タスクサマリー
 
 | ID | Phase | タスク | 状態 | 依存 |
@@ -483,7 +492,8 @@ infra/documentation/review-gateのみのtaskはRed/Greenを要求しない。そ
 - [ ] review reportにPhase 4A対象§19～§24、`reviewed HEAD=<40桁SHA>`, `verdict=pass`, `unresolved findings=0`を記録する。
 - [ ] review report pathとreviewed HEADをP4A-000 reportへ記録する。
 - [ ] diagnostic artifact workflow fileが`.github/workflows/`配下に存在する。
-- [ ] preflight fixture manifestに `Entire.Contains(+Infinity)==false` と `Entire.Contains(0.0)==true` の2 caseId・input・expectedを登録し、harnessがproduction `Contains`を呼び出さずに2件を列挙・parseできることを確認する。
+- [ ] fixture manifestに `p4a-contains-entire-finite`: input=`Entire, 0.0`, expected=`true` と `p4a-contains-entire-inf`: input=`Entire,+Infinity`, expected=`false` を登録する。
+- [ ] metadata validation commandはproduction `Contains`を呼ばず、上記2 caseのcaseId/input/expectedを列挙・parseして終了コード0となる。
 - [ ] Midpoint tie policyとPhase 4A public namingを単一値でdecision recordへ固定し`TBD`を0件にする。
 - [ ] P4A-001の最初のRed commitのparent時点でP4A-000 status=`完了`である。
 
@@ -493,7 +503,7 @@ infra/documentation/review-gateのみのtaskはRed/Greenを要求しない。そ
 
 ### 受け入れ条件
 
-- [ ] P4A-000で登録した`Entire.Contains(+Infinity)==false`または`Entire.Contains(0.0)==true`の少なくとも1件を、production実装前のRed commitで実行して終了コード非0となることを記録する。
+- [ ] P4A-000の`p4a-contains-entire-finite`または`p4a-contains-entire-inf`をproduction `Contains`へ適用するRed testを実装前に実行し、未実装を理由に終了コード非0となることをreportへ記録する。
 - [ ] `Empty.Contains(0)==false`, `Entire.Contains(0)==true`, `Entire.Contains(+Inf)==false`, `Entire.Contains(-Inf)==false`, `Entire.Contains(NaN)==false`となる。
 - [ ] `Zero.Contains(+0.0)==true`かつ`Zero.Contains(-0.0)==true`となる。
 - [ ] `[1,2].Contains(1)==true`, `.Contains(2)==true`, `.Contains(0)==false`, `.Contains(3)==false`となる。
@@ -599,7 +609,8 @@ infra/documentation/review-gateのみのtaskはRed/Greenを要求しない。そ
 - [ ] P4A-008が`完了`である。
 - [ ] review reportに§25～§27、reviewed HEAD、verdict=pass、unresolved findings=0を記録する。
 - [ ] diagnostic workflowが存在し、P4A final run artifactを1件取得できる。
-- [ ] preflight fixture manifestにinput=`[-2,1]`, expected=`[-0.0,4]`のSquare caseを登録し、harnessがproduction `Square`を呼び出さずにcaseId・input・expectedを列挙・parseできることを確認する。
+- [ ] first-source fixtureとして `p4b-constant-pi` を登録し、expected Lower bits=`0x400921fb54442d18`, Upper bits=`0x400921fb54442d19` とする。
+- [ ] metadata validation commandはproduction `IntervalConstants.Pi`を参照せず、`p4b-constant-pi`のcaseId/expected bits/reference=`MPFR RNDD/RNDU`を列挙・parseして終了コード0となる。
 - [ ] P4B-001 Red commit前にP4B-000 status=`完了`とする。
 
 ## P4B-001 tight IntervalConstants
@@ -608,7 +619,8 @@ infra/documentation/review-gateのみのtaskはRed/Greenを要求しない。そ
 
 ### 受け入れ条件
 
-- [ ] P4B-000で登録した最初のPhase 4B fixtureをproduction implementation前のRed commitで実行し、未実装を理由に終了コード非0となることを記録する。
+- [ ] P4B-000の`p4b-constant-pi`をproduction `IntervalConstants.Pi`へ適用するRed testを実装前に実行し、未実装を理由に終了コード非0となることをreportへ記録する。
+- [ ] `Pi`のLower bits=`0x400921fb54442d18`, Upper bits=`0x400921fb54442d19`となる。
 - [ ] `Pi, HalfPi, TwoPi, E, Ln2, Ln10, Sqrt2`の7 constantについてMPFR RNDD/RNDU生成lower/upper bitsをfixtureへ固定する。
 - [ ] generatorは各constantで`lower <= exact value <= upper`を確認する。
 - [ ] exact valueがbinary64で表現不能なconstantをnearest doubleのsingletonとして保存しない。
@@ -706,7 +718,8 @@ infra/documentation/review-gateのみのtaskはRed/Greenを要求しない。そ
 - [ ] P4B-007が`完了`である。
 - [ ] §28～§29と§33のreview reportがreviewed HEAD、verdict=pass、unresolved findings=0を持つ。
 - [ ] endpoint backendがP4B-007でqualified済みである。
-- [ ] preflight fixture manifestに `Log([-1,1])=[-Inf,+0.0]` のcaseId・input・expected bits/referenceを登録し、production `Log`を呼ばずにMPFR/reference harnessがfixture metadataを列挙・parseできることを確認する。
+- [ ] first-source fixtureとして `p4c-exp-zero`: input=`[0,0]`, expected=`[1,1]` を登録する。
+- [ ] metadata validation commandはproduction `Exp`を呼ばず、`p4c-exp-zero`のcaseId/input/expected/reference metadataを列挙・parseして終了コード0となる。
 - [ ] P4C-001 Red commit前にP4C-000 status=`完了`とする。
 
 ## P4C-001 Exp / Exp2 / Exp10
@@ -715,7 +728,7 @@ infra/documentation/review-gateのみのtaskはRed/Greenを要求しない。そ
 
 ### 受け入れ条件
 
-- [ ] P4C-000で登録した最初のPhase 4C fixtureをproduction implementation前のRed commitで実行し、未実装を理由に終了コード非0となることを記録する。
+- [ ] P4C-000の`p4c-exp-zero`をproduction `Exp`へ適用するRed testを実装前に実行し、未実装を理由に終了コード非0となることをreportへ記録する。
 - [ ] Empty inputはEmptyを返す。
 - [ ] lower=-Infinity endpointはlower result=+0.0、upper=+Infinity endpointはupper result=+Infinityとなる。
 - [ ] `Exp([0,0])=[1,1]`, `Exp2([0,0])=[1,1]`, `Exp10([0,0])=[1,1]`となる。
@@ -747,7 +760,7 @@ infra/documentation/review-gateのみのtaskはRed/Greenを要求しない。そ
 
 ## P4C-004 Asinh/Acosh/Atanh/Asin/Acos/Atan
 
-**設計参照:** §29.3
+**設計参照:** §29.3, F-PR5-011
 
 ### 受け入れ条件
 
@@ -786,7 +799,8 @@ infra/documentation/review-gateのみのtaskはRed/Greenを要求しない。そ
 - [ ] P4C-005が`完了`である。
 - [ ] §30～§33 review reportにreviewed HEAD、verdict=pass、unresolved findings=0を記録する。
 - [ ] high-precision reducer table format/bit length/generator hashをreviewで固定し`TBD`を0件にする。
-- [ ] preflight fixture manifestに `Atan2(Zero,[-2,-1])=Pi` と `Sin([0,HalfPi])=[0,1]` のcaseId・input・expectedを登録し、production `Atan2`/`Sin`を呼ばずにreference harnessがfixture metadataを列挙・parseできることを確認する。
+- [ ] first-source fixtureとして `p4d-reducer-zero`: input bits=`0x0000000000000000`, expected quadrant=`0`, expected k=`0`, expected critical/pole decision=`none` を登録する。
+- [ ] metadata validation commandはproduction periodic reducerを呼ばず、`p4d-reducer-zero`のcaseId/input/expected metadataを列挙・parseして終了コード0となる。
 - [ ] P4D-001 Red commit前にP4D-000 status=`完了`とする。
 
 ## P4D-001 high-precision periodic reducer
@@ -795,7 +809,8 @@ infra/documentation/review-gateのみのtaskはRed/Greenを要求しない。そ
 
 ### 受け入れ条件
 
-- [ ] P4D-000で登録した最初のPhase 4D fixtureをproduction implementation前のRed commitで実行し、未実装を理由に終了コード非0となることを記録する。
+- [ ] P4D-000の`p4d-reducer-zero`をproduction reducerへ適用するRed testを実装前に実行し、未実装を理由に終了コード非0となることをreportへ記録する。
+- [ ] input=+0.0ではquadrant=0, k=0, critical/pole decision=noneとなる。
 - [ ] reducerが固定high-precision `2/pi` と `pi/2` tableを使用し、`Math.PI`通常除算だけでquadrantを決定するpathが0件である。
 - [ ] `% (2*Math.PI)`だけでperiodic critical point/poleを決定するpathが0件である。
 - [ ] exact critical lattice直前/一致/直後の固定binary64 witnessでquadrant/pole判定がreferenceと一致する。
@@ -894,7 +909,8 @@ infra/documentation/review-gateのみのtaskはRed/Greenを要求しない。そ
 - [ ] Normal stateでlower=`+0.0`またはupper=`-0.0`が入力された場合はdecode時にそれぞれ`-0.0`/`+0.0`へcanonicalizeする。unknown state/versionはrejectする。
 - [ ] v1 canonical fixtureを最低4件固定する: Normal `[1,2]`; Normal Zero（Lower bits=`0x8000000000000000`, Upper bits=`0x0000000000000000`）; Normal Entire（Lower=`0xfff0000000000000`, Upper=`0x7ff0000000000000`）; Empty（state=`0x01`, payload=all zero）。各fixtureで18 byte全体のexpected hex列を保存する。
 - [ ] Parse rejected inputで送出するexception typeまたはerror contractを1つに固定し、TryParseはfalse/out=Emptyとするdecisionを記録する。
-- [ ] preflight fixture manifestに `DivideToUnion([1,2],Entire).Count==2` のcaseId・input・expected component metadataを登録し、production `DivideToUnion`を呼ばずにharnessがfixture metadataを列挙・parseできることを確認する。
+- [ ] first-source fixtureとして `p4e-union-default`: expression=`default(IntervalUnion2)`, expected Count=`0`, First=`Empty`, Second=`Empty` をmetadataへ登録する。
+- [ ] metadata validation commandはproduction `IntervalUnion2`を参照せず、`p4e-union-default`のcaseId/expected stateを列挙・parseして終了コード0となる。
 - [ ] P4E-001 Red commit前にP4E-000 status=`完了`とする。
 
 ## P4E-001 IntervalUnion2
@@ -903,7 +919,7 @@ infra/documentation/review-gateのみのtaskはRed/Greenを要求しない。そ
 
 ### 受け入れ条件
 
-- [ ] P4E-000で登録した最初のPhase 4E fixtureをproduction implementation前のRed commitで実行し、未実装を理由に終了コード非0となることを記録する。
+- [ ] P4E-000の`p4e-union-default`をproduction `IntervalUnion2`へ適用するRed testを実装前に実行し、型/API未実装を理由に終了コード非0となることをreportへ記録する。
 - [ ] `default(IntervalUnion2).Count==0`, `IsEmpty==true`, `First==Empty`, `Second==Empty`となる。
 - [ ] Count=1はFirst nonempty/Second Empty、Count=2はFirst/Second nonemptyかつ`First.Upper<=Second.Lower`となる。
 - [ ] `First.Upper==Second.Lower`のCount=2をmergeしない固定fixtureを持つ。
@@ -1081,7 +1097,7 @@ infra/documentation/review-gateのみのtaskはRed/Greenを要求しない。そ
 
 | Finding | 修正先 | 具体化した証拠 |
 |---|---|---|
-| F-PR5-001 High | P4A-000/P4B-000/P4C-000/P4D-000/P4E-000 + 各先頭source task | preflightはfixture metadata列挙/parseまで。production挙動の失敗確認は先頭source task Redへ分離 |
+| F-PR5-001 High | Phase 4 preflight共通規則 + P4A-000/P4B-000/P4C-000/P4D-000/P4E-000 + 各先頭source task | preflightはfixture metadata列挙/parseのみ。各fixtureを最初のsource taskへ対応させ、production挙動の失敗確認は各`P4?-001` Redへ分離 |
 | F-PR5-002 Medium | P1-001 | caseId/inputBits/branch/exact/Devo6/inari/kv/MPFR/expected-difference fields |
 | F-PR5-003 Medium | P1-002 | `[-Lower,Upper]`, canonical qNaN 2 lane,片側NaN禁止, raw constructor, ToString |
 | F-PR5-004 Medium | P1-006/P1-008 | `NextUp/NextDown/無補正`条件と5 branch witnessを明記 |
